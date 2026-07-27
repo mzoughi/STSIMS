@@ -1,0 +1,1028 @@
+/* ==========================================
+   GENERAL
+========================================== */
+
+*{
+    box-sizing:border-box;
+}
+
+
+body{
+
+    margin:0;
+
+    padding:10px;
+
+    font-family:Arial, Helvetica, sans-serif;
+
+     background:linear-gradient(
+        180deg,
+        #F8FCFF,
+        #EEF5FA
+    );
+
+}
+
+
+
+/* ==========================================
+   HEADER
+========================================== */
+
+/* ==========================================
+   HERO HEADER
+========================================== */
+
+.hero{
+
+    width:90%;
+
+    max-width:1200px;
+
+    margin:20px auto;
+
+}
+
+
+
+.hero-content{
+
+    background:linear-gradient(
+        135deg,
+        #ffffff,
+        #f7fbff
+    );
+
+    border-radius:20px;
+
+    padding:18px 30px;
+
+    text-align:center;
+
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+
+}
+
+
+
+.hero-icon{
+
+    font-size:26px;
+margin-bottom:6px;
+
+}
+
+
+
+.hero h1{
+
+    margin:0;
+
+    font-size:34px;
+
+    color:#234E70;
+
+    font-weight:700;
+
+    letter-spacing:.5px;
+
+}
+
+
+
+.hero-divider{
+
+    width:200px;
+height:4px;
+margin:10px auto;
+
+    border-radius:20px;
+
+    background:linear-gradient(
+    90deg,
+    #9AD7FF,
+    #B7E8D4,
+    #c4b3f7
+);
+
+}
+
+
+
+.subtitle{
+
+    max-width:700px;
+
+    margin:0 auto;
+
+    font-size:15px;
+
+    line-height:1.6;
+
+    color:#6C7A89;
+
+}
+
+
+
+.equation{
+
+    margin-top:20px;
+
+    font-size:26px;
+
+    font-weight:bold;
+
+    color:#4A90E2;
+
+    letter-spacing:2px;
+
+}
+
+.fraction{
+
+    display:inline-block;
+
+    vertical-align:middle;
+
+    text-align:center;
+
+    line-height:1;
+
+}
+
+
+.fraction .numerator{
+
+    display:block;
+
+    border-bottom:2px solid currentColor;
+
+    padding:0 8px 3px 8px;
+
+}
+
+
+.fraction .denominator{
+
+    display:block;
+
+    padding-top:3px;
+
+}
+
+.variable{
+    font-style: italic;
+}
+
+.features{
+
+    margin-top:15px;
+
+    font-size:15px;
+
+    color:#94A3B8;
+
+    font-weight:600;
+
+    letter-spacing:.8px;
+
+}
+
+
+
+/* ==========================================
+   SHARED PANEL STYLE
+========================================== */
+
+.controls,
+.simulation-area,
+.graph-panel{
+
+    width:90%;
+
+    max-width:1150px;
+
+    margin:12px auto;
+
+}
+
+
+
+.controls,
+.circuit-panel,
+.value-panel,
+.graph-panel{
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:15px;
+
+    box-shadow:0px 4px 12px rgba(0,0,0,.15);
+
+}
+
+
+
+h2{
+
+    margin-top:0;
+
+    color:#1f4e79;
+
+    text-align:center;
+
+}
+
+
+
+/* ==========================================
+   CONTROLS
+========================================== */
+
+
+.control{
+
+    margin-bottom:10px;
+
+}
+
+
+.control:last-child{
+
+    margin-bottom:0;
+
+}
+
+
+label{
+
+    display:block;
+
+    font-weight:bold;
+
+    margin-bottom:8px;
+
+    font-size:18px;
+
+}
+
+
+input[type="range"]{
+
+    width:75%;
+
+}
+
+
+select{
+
+    width:320px;
+
+    padding:12px;
+
+    font-size:17px;
+
+    font-weight:bold;
+
+    border-radius:8px;
+
+    border:2px solid #c7d3df;
+
+    background:white;
+
+    cursor:pointer;
+
+}
+
+
+select:hover{
+
+    border-color:#1f4e79;
+
+}
+
+/* ==========================================
+   CONTROLS + PHYSICS INSIGHT LAYOUT
+========================================== */
+
+
+.controls-layout{
+
+    display:flex;
+
+    flex-direction:row;
+
+    align-items:flex-start;
+
+    justify-content:flex-start;
+
+    gap:10px;
+
+}
+
+
+
+.slider-panel{
+
+    width:50%;
+
+}
+
+
+
+.insight-panel{
+
+    width:45%;
+
+    background:#f8fbff;
+
+    border:1px solid #d5e1ed;
+
+    border-radius:14px;
+
+    padding:18px;
+
+}
+
+
+
+.insight-panel h3{
+
+    margin-top:0;
+
+    text-align:center;
+
+    color:#1f4e79;
+
+    font-size:22px;
+
+}
+
+
+
+#insightText{
+
+    font-size:15px;
+
+    line-height:1.5;
+
+    color:#333;
+
+}
+
+
+
+.circuit-select{
+
+    margin-bottom:30px;
+
+}
+
+
+
+/* ==========================================
+   CIRCUIT + VALUES LAYOUT
+========================================== */
+
+
+.simulation-area{
+
+    display:flex;
+
+    flex-direction:row;
+
+    gap:25px;
+
+    align-items:stretch;
+
+}
+
+
+
+/* ==========================================
+   CIRCUIT PANEL
+========================================== */
+
+
+.circuit-panel{
+
+    flex:2;
+
+    position:relative;
+
+    text-align:center;
+
+}
+
+
+
+#circuitSVG{
+
+    width:100%;
+
+    height:260px;
+
+}
+
+
+
+/* ==========================================
+   FLOW BUTTON
+========================================== */
+
+
+.flow-button{
+
+    position:absolute;
+
+    top:15px;
+
+    right:15px;
+
+    width:38px;
+
+    height:38px;
+
+    border-radius:50%;
+
+    border:none;
+
+    background:#eeeeee;
+
+    cursor:pointer;
+
+    font-size:18px;
+    .flow-button svg{
+
+    width:18px;
+
+    height:18px;
+
+    fill:#2f3e46;
+
+}
+
+.flow-button{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+}
+
+
+.flow-button:hover{
+
+    transform:scale(1.1);
+
+}
+
+
+
+/* ==========================================
+   VALUE PANEL
+========================================== */
+
+
+.value-panel{
+
+    flex:0.8;
+
+}
+
+
+
+.value-card{
+
+    background:#f4f8fc;
+
+    border:1px solid #d5e1ed;
+
+    border-radius:12px;
+
+    padding:12px;
+
+    margin-bottom:15px;
+
+    text-align:center;
+
+}
+
+
+.value-card:last-child{
+
+    margin-bottom:0;
+
+}
+
+
+.value-card h3{
+
+    margin:5px 0;
+
+    color:#1f4e79;
+
+}
+
+
+.value-card p{
+
+    font-size:26px;
+
+    font-weight:bold;
+
+    margin:5px;
+
+    color:#1565c0;
+
+}
+
+
+
+/* ==========================================
+   SVG CIRCUIT COMPONENTS
+========================================== */
+
+
+.wire{
+
+    stroke:#222;
+
+    stroke-width:5;
+
+    fill:none;
+
+}
+
+
+
+.resistor{
+
+    fill:#F7C59F;
+
+}
+
+
+
+.currentParticle{
+
+    fill:#74B9FF;
+
+}
+
+
+
+/* All SVG labels */
+
+.label{
+
+    font-size:20px;
+
+    font-weight:bold;
+
+}
+
+
+
+/* Battery + and - symbols */
+
+.battery-symbol{
+
+    font-size:32px;
+
+    font-weight:bold;
+
+}
+
+
+
+/* Resistor values */
+
+.resistor-label{
+
+    font-size:18px;
+
+    font-weight:bold;
+
+}
+
+
+
+
+
+/* ==========================================
+   UTILITIES
+========================================== */
+
+
+.hidden{
+
+    display:none;
+
+}
+
+
+
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+
+@media(max-width:850px){
+
+
+    .simulation-area{
+
+        flex-direction:column;
+        
+        .controls-layout{
+
+    flex-direction:column;
+
+}
+
+    }
+
+
+
+    .graphs{
+
+        grid-template-columns:1fr;
+
+    }
+
+
+
+    h1{
+
+        font-size:30px;
+
+    }
+
+
+
+    .equation{
+
+        font-size:24px;
+
+    }
+
+
+
+    select{
+
+        width:100%;
+
+    }
+
+
+
+    #circuitSVG{
+
+        height:300px;
+
+    }
+
+
+}
+
+/* ======================================
+   COMPONENT ANALYSIS
+====================================== */
+
+.analysis-panel{
+
+    width:90%;
+
+    margin:30px auto 0 auto;
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+
+}
+
+.analysis-panel h2{
+
+    text-align:center;
+
+    margin-bottom:25px;
+
+    font-size:1.5rem;
+
+    color:#1f4e79;
+
+}
+
+
+/* -------------------------------------
+   Individual Resistor Section
+-------------------------------------- */
+
+.analysis-item{
+
+    background:#f4f8fc;
+
+    border:1px solid #d5e1ed;
+
+    border-radius:12px;
+
+    padding:16px;
+
+    margin-bottom:15px;
+
+}
+
+.analysis-item:last-child{
+
+    margin-bottom:0;
+
+}
+
+
+/* -------------------------------------
+   Header
+-------------------------------------- */
+
+.analysis-header{
+
+    display:flex;
+
+    align-items:center;
+
+
+    gap:12px;
+
+    margin-bottom:18px;
+
+}
+
+.analysis-header h3{
+
+    margin:0;
+
+    color:#333;
+
+    font-weight:600;
+
+}
+
+
+/* -------------------------------------
+   Colored Indicator
+-------------------------------------- */
+
+.resistor-indicator{
+
+    width:6px;
+
+    height:28px;
+
+    border-radius:8px;
+
+}
+
+
+/* pastel colors */
+
+.r1{
+    background:#A78BFA;
+}
+
+.r2{
+    background:#F9A8D4;
+}
+
+.r3{
+    background:#FDE68A;
+}
+
+.r4{
+    background:#93C5FD;
+}
+
+
+/* -------------------------------------
+   Voltage Current Power Row
+-------------------------------------- */
+
+.analysis-values{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:30px;
+
+    margin-bottom:18px;
+
+}
+
+.analysis-values > div{
+
+    flex:1;
+
+    text-align:center;
+
+}
+
+.label{
+
+    color:#666;
+
+    font-size:14px;
+
+    margin-bottom:6px;
+
+}
+
+.analysis-values span:last-child{
+
+    font-size:24px;
+
+    font-weight:bold;
+
+    color:#333;
+
+}
+
+
+/* -------------------------------------
+   Observation
+-------------------------------------- */
+
+.analysis-observation{
+
+    border-top:1px solid #d5e1ed;
+
+    padding-top:12px;
+
+    margin-top:12px;
+
+    color:#444;
+
+}
+
+#resistor1,
+#resistor2,
+#resistor3,
+#resistor4{
+
+    transition:filter .2s ease;
+
+}
+
+@keyframes resistorPulse{
+
+    0%{
+
+        filter:
+            drop-shadow(0 0 0px #c29ff7)
+            drop-shadow(0 0 0px #c29ff7);
+
+    }
+
+    50%{
+
+        filter:
+            drop-shadow(0 0 10px #c29ff7)
+            drop-shadow(0 0 22px #c29ff7);
+
+    }
+
+    100%{
+
+        filter:
+            drop-shadow(0 0 0px #c29ff7)
+            drop-shadow(0 0 0px #c29ff7);
+
+    }
+
+}
+
+.resistor-glow-purple{
+
+    animation:resistorPulse 1.2s ease-in-out infinite;
+
+}
+
+@keyframes resistorPulsePink{
+
+    0%{
+        filter:
+            drop-shadow(0 0 0px #f7b6d2)
+            drop-shadow(0 0 0px #f7b6d2);
+    }
+
+    50%{
+        filter:
+            drop-shadow(0 0 10px #f7b6d2)
+            drop-shadow(0 0 22px #f7b6d2);
+    }
+
+    100%{
+        filter:
+            drop-shadow(0 0 0px #f7b6d2)
+            drop-shadow(0 0 0px #f7b6d2);
+    }
+
+}
+
+
+.resistor-glow-pink{
+
+    animation: resistorPulsePink 1.2s ease-in-out infinite;
+
+}
+
+/* -------------------------------------
+   R3 Yellow Glow
+-------------------------------------- */
+
+@keyframes resistorPulseYellow{
+
+    0%{
+
+        filter:
+            drop-shadow(0 0 0px #ffe89a)
+            drop-shadow(0 0 0px #ffe89a);
+
+    }
+
+    50%{
+
+        filter:
+            drop-shadow(0 0 10px #ffe89a)
+            drop-shadow(0 0 22px #ffe89a);
+
+    }
+
+    100%{
+
+        filter:
+            drop-shadow(0 0 0px #ffe89a)
+            drop-shadow(0 0 0px #ffe89a);
+
+    }
+
+}
+
+
+.resistor-glow-yellow{
+
+    animation: resistorPulseYellow 1.2s ease-in-out infinite;
+
+}
+
+
+
+/* -------------------------------------
+   R4 Blue Glow
+-------------------------------------- */
+
+@keyframes resistorPulseBlue{
+
+    0%{
+
+        filter:
+            drop-shadow(0 0 0px #a9d8ff)
+            drop-shadow(0 0 0px #a9d8ff);
+
+    }
+
+    50%{
+
+        filter:
+            drop-shadow(0 0 10px #a9d8ff)
+            drop-shadow(0 0 22px #a9d8ff);
+
+    }
+
+    100%{
+
+        filter:
+            drop-shadow(0 0 0px #a9d8ff)
+            drop-shadow(0 0 0px #a9d8ff);
+
+    }
+
+}
+
+
+.resistor-glow-blue{
+
+    animation: resistorPulseBlue 1.2s ease-in-out infinite;
+
+}

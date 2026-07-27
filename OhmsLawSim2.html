@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Circuit Laboratory</title>
+<link rel="stylesheet" href="OhmsLawSim2style.css">
+</head>
+
+<body>
+<!-- ==========================================
+ HEADER
+========================================== -->
+<header class="hero">
+<div class="hero-content">
+
+<h1>
+Interactive Circuit Laboratory</h1>
+
+<div class="hero-divider"></div>
+</p>
+
+<p class="features">
+Ashlyn Thomas • Maryam Kodvavi • Zara Qureshi
+</p>
+</div>
+</header>
+<!-- ==========================================
+ CONTROLS
+========================================== -->
+
+<section class="controls">
+
+<h2>
+Simulation Controls</h2>
+<div class="controls-layout">
+<!-- LEFT CONTROL COLUMN -->
+<div class="slider-panel">
+<!-- Circuit Selection -->
+<div class="control circuit-select">
+
+<label for="circuitType">
+Circuit Type
+</label>
+
+<select id="circuitType">
+
+<option value="single">
+Single Resistor
+</option>
+
+<option value="series">
+Two Resistors in Series
+</option>
+
+<option value="parallel">
+Two Resistors in Parallel
+</option>
+<option value="complex">
+Complex Circuit</option>
+</select>
+</div>
+<!-- Voltage -->
+<div class="control">
+
+<label for="voltage">
+Voltage
+<span id="voltageValue">
+12.0</span>
+V
+</label>
+<input
+type="range"
+id="voltage"
+min="0"
+max="24"
+step="0.1"
+value="12">
+</div>
+
+<!-- Resistance 1 -->
+<div class="control">
+
+<label for="resistance1">
+
+<span id="resistance1Label">
+Resistance
+</span>
+
+(<span id="resistance1Value">10</span> Ω)
+</label>
+<input
+type="range"
+id="resistance1"
+min="1"
+max="100"
+step="1"
+value="10">
+</div>
+<!-- Resistance 2 -->
+
+<div
+class="control hidden"
+id="resistance2Container">
+<label for="resistance2">
+
+Resistance 2
+
+(<span id="resistance2Value">20</span> Ω)
+</label>
+<input
+type="range"
+id="resistance2"
+min="1"
+max="100"
+step="1"
+value="20">
+</div>
+<!-- Complex Circuit Resistors -->
+<div class="control hidden" id="resistance3Container">
+<label for="resistance3">
+Resistance 3
+(<span id="resistance3Value">20</span> Ω)
+</label>
+
+<input
+type="range"
+id="resistance3"
+min="5"
+max="100"
+value="20"
+>
+</div>
+<div class="control hidden" id="resistance4Container">
+<label for="resistance4">
+Resistance 4
+(<span id="resistance4Value">20</span> Ω)
+</label>
+
+<input
+type="range"
+id="resistance4"
+min="5"
+max="100"
+value="20"
+>
+</div>
+</div>
+<!-- RIGHT INSIGHT COLUMN -->
+
+<div class="insight-panel">
+
+<h3>
+Physics Insight
+</h3>
+<p id="insightText">
+Adjust the controls to explore how voltage and resistance affect current.
+</p>
+</div>
+</div>
+</section>
+<!-- ==========================================
+ CIRCUIT DISPLAY
+========================================== -->
+
+<section class="simulation-area">
+<div class="circuit-panel">
+
+<h2>
+Circuit</h2>
+<button id="flowToggle" class="flow-button">
+<svg id="flowIcon"
+ width="18"
+ height="18"
+ viewBox="0 0 18 18">
+<!-- Pause icon -->
+<rect x="4" y="2" width="3.5" height="14" rx="1"></rect>
+<rect x="10.5" y="2" width="3.5" height="14" rx="1"></rect>
+</svg>
+</button>
+<svg
+id="circuitSVG"
+viewBox="100 20 700 360">
+</svg>
+</div>
+<div class="value-panel">
+<h2>
+Circuit Summary</h2>
+<div class="value-card">
+<h3>
+Equivalent Resistance</h3>
+<p>
+<span id="displayResistance">10</span>
+Ω
+</p>
+</div>
+<div class="value-card">
+<h3>
+Source Current</h3>
+<p>
+<span id="displayCurrent">1.20</span>
+A
+</p>
+</div>
+<div class="value-card">
+<h3>
+Total Power</h3>
+<p>
+<span id="displayPower">0.00</span>
+W
+</p>
+</div>
+</div>
+</section>
+<!-- ==========================================
+ COMPONENT ANALYSIS
+========================================== -->
+<section class="analysis-panel">
+<h2>Component Analysis</h2>
+<div id="r1Card" class="analysis-item">
+<div class="analysis-header">
+<div class="resistor-indicator r1"></div>
+<h3>Resistor 1</h3>
+</div>
+<div class="analysis-values">
+<div>
+<span class="label">Voltage</span>
+<span id="r1Voltage">-- V</span>
+</div>
+<div>
+<span class="label">Current</span>
+<span id="r1Current">-- A</span>
+</div>
+<div>
+<span class="label">Power</span>
+<span id="r1Power">-- W</span>
+</div>
+</div>
+<div class="analysis-observation">
+<strong>Observation:</strong>
+<span id="r1Observation">
+Only resistor in the circuit.
+</span>
+</div>
+</div>
+<div id="r2Card" class="analysis-item hidden">
+<div class="analysis-header">
+<div class="resistor-indicator r2"></div>
+<h3>Resistor 2</h3>
+</div>
+<div class="analysis-values">
+<div>
+<span class="label">Voltage</span>
+<span id="r2Voltage">-- V</span></div>
+<div>
+<span class="label">Current</span>
+<span id="r2Current">-- A</span></div>
+<div>
+<span class="label">Power</span>
+<span id="r2Power">-- W</span></div>
+</div>
+<div class="analysis-observation">
+<strong>Observation:</strong>
+<span id="r2Observation">
+Waiting for data...
+</span>
+</div>
+</div>
+<!-- R3 CARD -->
+<div id="r3Card" class="analysis-item hidden">
+<div class="analysis-header">
+<div class="resistor-indicator r3"></div>
+<h3>Resistor 3</h3>
+</div>
+
+<div class="analysis-values">
+<div>
+<span class="label">Voltage</span>
+<span id="r3Voltage">-- V</span></div>
+
+<div>
+<span class="label">Current</span>
+<span id="r3Current">-- A</span></div>
+
+<div>
+<span class="label">Power</span>
+<span id="r3Power">-- W</span></div>
+</div>
+
+<div class="analysis-observation">
+<strong>Observation:</strong>
+<span id="r3Observation">
+Waiting for data...
+</span>
+</div>
+</div>
+<!-- R4 CARD -->
+<div id="r4Card" class="analysis-item hidden">
+<div class="analysis-header">
+<div class="resistor-indicator r4"></div>
+<h3>Resistor 4</h3>
+</div>
+
+<div class="analysis-values">
+<div>
+<span class="label">Voltage</span>
+<span id="r4Voltage">-- V</span></div>
+
+<div>
+<span class="label">Current</span>
+<span id="r4Current">-- A</span></div>
+
+<div>
+<span class="label">Power</span>
+<span id="r4Power">-- W</span></div>
+</div>
+
+<div class="analysis-observation">
+<strong>Observation:</strong>
+<span id="r4Observation">
+Waiting for data...
+</span>
+</div>
+</div>
+</section>
+<!-- ==========================================
+ JAVASCRIPT
+========================================== -->
+
+<script src="OhmsLawSim2circuits.js"></script>
+<script src="OhmsLawSim2script.js"></script>
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charges &amp; Fields — Electrostatics Bench</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #05070a;
+    color: #c9d6de;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    display: flex;
+    justify-content: center;
+    padding: 20px 10px;
+  }
+  .app { max-width: 760px; width: 100%; }
+  .header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .eyebrow { font-size: 12px; letter-spacing: 3px; color: #5ad1ff; text-transform: uppercase; }
+  .title { font-size: 20px; font-weight: 700; color: #eaf2f6; font-family: system-ui, sans-serif; }
+  .hint { font-size: 11px; color: #5f7180; text-align: right; }
+  .tabs, .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; font-family: system-ui, sans-serif; font-size: 13px; }
+  .tabs { gap: 6px; }
+  button {
+    background: #0d1318; border: 1px solid #1c262e; color: #5f7180;
+    padding: 7px 12px; border-radius: 6px; cursor: pointer; font-family: system-ui, sans-serif; font-size: 13px;
+  }
+  button.active-tab { background: #132018; border-color: #8fe3b0; color: #8fe3b0; font-weight: 600; }
+  button.toggle-on { border-color: currentColor; }
+  .capacitor-panel {
+    display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-bottom: 10px;
+    font-family: system-ui, sans-serif; font-size: 12px; background: #0d1318; border: 1px solid #1c262e;
+    border-radius: 8px; padding: 10px 14px;
+  }
+  .capacitor-panel label { display: flex; flex-direction: column; gap: 4px; min-width: 180px; }
+  .capacitor-panel input[type=range] { accent-color: #8fe3b0; }
+  .note { color: #5f7180; font-size: 11px; }
+  .stage {
+    position: relative; width: 100%; aspect-ratio: 700/490; border-radius: 8px; overflow: hidden;
+    border: 1px solid #1c262e; touch-action: none;
+  }
+  canvas { width: 100%; height: 100%; display: block; }
+  .handle { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); cursor: grab; border-radius: 50%; }
+  .handle:active { cursor: grabbing; }
+  .readout {
+    margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;
+    background: #0d1318; border: 1px solid #1c262e; border-radius: 8px; padding: 10px 14px;
+  }
+  .readout .label { font-size: 10px; color: #5f7180; letter-spacing: 1px; }
+  .readout .value { font-size: 18px; color: #8fe3b0; text-shadow: 0 0 8px #8fe3b055; font-variant-numeric: tabular-nums; }
+  .chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; font-family: system-ui, sans-serif; }
+  .chip {
+    background: #1a1420; border: 1px solid #ff6fae55; color: #ff9fc7; padding: 3px 8px; border-radius: 999px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="eyebrow">Electrostatics Bench</div>
+      <div class="title">Charges &amp; Fields</div>
+    </div>
+    <div class="hint">k = 1 (unitless)<br>drag charges, sensor &amp; test charge</div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabPoints" class="active-tab">Point Charges</button>
+    <button id="tabCapacitor">Parallel Plate Capacitor</button>
+  </div>
+
+  <div class="toolbar">
+    <button id="addPos" style="color:#ffb454;border-color:#ffb45455">+ add +1</button>
+    <button id="addNeg" style="color:#5ad1ff;border-color:#5ad1ff55">+ add −1</button>
+    <button id="toggleFieldLines" style="color:#8fe3b0;border-color:#8fe3b055">field lines on</button>
+    <button id="toggleField" style="color:#334049;border-color:#33404955">field vectors off</button>
+    <button id="toggleGrid" style="color:#8fe3b0;border-color:#8fe3b055">grid on</button>
+    <button id="traceEq" style="color:#ff6fae;border-color:#ff6fae55">trace equipotential</button>
+    <button id="toggleTest" style="color:#c6ff4d;border-color:#c6ff4d55">test charge on</button>
+    <button id="resetAll" style="color:#334049;border-color:#33404955">reset</button>
+  </div>
+
+  <div class="capacitor-panel" id="capPanel" style="display:none;">
+    <label>plate separation d = <span id="dVal">2.20</span> m
+      <input type="range" id="dSlider" min="0.4" max="4" step="0.05" value="2.2">
+    </label>
+    <label>plate charge magnitude Q = <span id="qVal">6.0</span>
+      <input type="range" id="qSlider" min="1" max="15" step="0.5" value="6">
+    </label>
+    <button id="flipPolarity" style="color:#eaf2f6;border-color:#eaf2f655">flip polarity</button>
+    <div class="note">ideal uniform E ≈ Q/L = <span id="idealE">1.00</span><br>(compare to sensor reading between the plates)</div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="canvas" width="700" height="490"></canvas>
+  </div>
+
+  <div class="readout" id="readout">
+    <div><div class="label">sensor: V</div><div class="value" id="rV">0.00 V</div></div>
+    <div><div class="label">sensor: |E|</div><div class="value" id="rE">0.00 N/C</div></div>
+    <div><div class="label">sensor: Ex</div><div class="value" id="rEx">0.00</div></div>
+    <div><div class="label">sensor: Ey</div><div class="value" id="rEy">0.00</div></div>
+    <div id="testQBox"><div class="label">test q</div><div class="value" id="rTestQ">+0.20</div></div>
+    <div id="testABox"><div class="label">test |a|</div><div class="value" id="rTestA">0.00</div></div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- constants ----------
+  var X_MIN = -5, X_MAX = 5, Y_MIN = -3.5, Y_MAX = 3.5;
+  var CW = 700, CH = 490;
+  var SCALE = CW / (X_MAX - X_MIN);
+  var K = 1;
+  var MIN_R = 0.12;
+  var PLATE_LENGTH = 6;
+  var PLATE_N = 21;
+  var TEST_Q = 0.2;
+  var TEST_MASS = 1;
+
+  function pxToSim(px, py) { return { x: X_MIN + px / SCALE, y: Y_MIN + py / SCALE }; }
+  function simToPx(x, y) { return { px: (x - X_MIN) * SCALE, py: (y - Y_MIN) * SCALE }; }
+
+  function fieldAt(x, y, charges) {
+    var Ex = 0, Ey = 0, V = 0;
+    for (var i = 0; i < charges.length; i++) {
+      var c = charges[i];
+      var dx = x - c.x, dy = y - c.y;
+      var r2 = dx * dx + dy * dy;
+      var r = Math.sqrt(r2);
+      if (r < MIN_R) r = MIN_R;
+      r2 = r * r;
+      Ex += (K * c.q * dx) / (r2 * r);
+      Ey += (K * c.q * dy) / (r2 * r);
+      V += (K * c.q) / r;
+    }
+    return { Ex: Ex, Ey: Ey, V: V };
+  }
+
+  function marchingSquares(valueFn, nx, ny, level) {
+    var xs = [], ys = [], i, j;
+    for (i = 0; i <= nx; i++) xs.push(X_MIN + ((X_MAX - X_MIN) * i) / nx);
+    for (j = 0; j <= ny; j++) ys.push(Y_MIN + ((Y_MAX - Y_MIN) * j) / ny);
+    var grid = [];
+    for (j = 0; j <= ny; j++) {
+      var row = [];
+      for (i = 0; i <= nx; i++) row.push(valueFn(xs[i], ys[j]));
+      grid.push(row);
+    }
+    var segs = [];
+    function lerp(pa, pb, va, vb) {
+      var t = (level - va) / (vb - va);
+      return [pa[0] + (pb[0] - pa[0]) * t, pa[1] + (pb[1] - pa[1]) * t];
+    }
+    for (j = 0; j < ny; j++) {
+      for (i = 0; i < nx; i++) {
+        var x0 = xs[i], x1 = xs[i + 1], y0 = ys[j], y1 = ys[j + 1];
+        var v0 = grid[j][i], v1 = grid[j][i + 1], v2 = grid[j + 1][i + 1], v3 = grid[j + 1][i];
+        var idx = 0;
+        if (v0 > level) idx |= 1;
+        if (v1 > level) idx |= 2;
+        if (v2 > level) idx |= 4;
+        if (v3 > level) idx |= 8;
+        if (idx === 0 || idx === 15) continue;
+        var pTop = lerp([x0, y0], [x1, y0], v0, v1);
+        var pRight = lerp([x1, y0], [x1, y1], v1, v2);
+        var pBottom = lerp([x0, y1], [x1, y1], v3, v2);
+        var pLeft = lerp([x0, y0], [x0, y1], v0, v3);
+        switch (idx) {
+          case 1: segs.push([pLeft, pTop]); break;
+          case 2: segs.push([pTop, pRight]); break;
+          case 3: segs.push([pLeft, pRight]); break;
+          case 4: segs.push([pRight, pBottom]); break;
+          case 5: segs.push([pLeft, pTop], [pRight, pBottom]); break;
+          case 6: segs.push([pTop, pBottom]); break;
+          case 7: segs.push([pLeft, pBottom]); break;
+          case 8: segs.push([pLeft, pBottom]); break;
+          case 9: segs.push([pTop, pBottom]); break;
+          case 10: segs.push([pTop, pLeft], [pRight, pBottom]); break;
+          case 11: segs.push([pRight, pBottom]); break;
+          case 12: segs.push([pLeft, pRight]); break;
+          case 13: segs.push([pTop, pRight]); break;
+          case 14: segs.push([pLeft, pTop]); break;
+        }
+      }
+    }
+    return segs;
+  }
+
+  function traceFieldLine(startX, startY, charges) {
+    var x = startX, y = startY;
+    var path = [[x, y]];
+    var step = 0.06, maxSteps = 400;
+    for (var i = 0; i < maxSteps; i++) {
+      var f = fieldAt(x, y, charges);
+      var mag = Math.hypot(f.Ex, f.Ey);
+      if (mag < 1e-9) break;
+      x += (f.Ex / mag) * step;
+      y += (f.Ey / mag) * step;
+      path.push([x, y]);
+      if (x < X_MIN - 0.6 || x > X_MAX + 0.6 || y < Y_MIN - 0.6 || y > Y_MAX + 0.6) break;
+      var absorbed = false;
+      for (var k = 0; k < charges.length; k++) {
+        var c = charges[k];
+        if (c.q < 0) {
+          var d = Math.hypot(x - c.x, y - c.y);
+          if (d < 0.16) { absorbed = true; break; }
+        }
+      }
+      if (absorbed) break;
+    }
+    return path;
+  }
+
+  // ---------- state ----------
+  var uid = 1;
+  function nextId() { return uid++; }
+
+  var state = {
+    mode: "points",
+    charges: [
+      { id: nextId(), x: -1.4, y: 0, q: 1 },
+      { id: nextId(), x: 1.4, y: 0, q: -1 }
+    ],
+    showField: false,
+    showFieldLines: true,
+    showGrid: true,
+    showTestCharge: true,
+    equipotentials: [],
+    sensor: { x: 0, y: 1.6 },
+    testCharge: { x: -2.6, y: -1.4 },
+    plateSeparation: 2.2,
+    plateCharge: 6,
+    platePolarity: 1
+  };
+  var dragging = null; // {type:'charge'|'sensor'|'test', id}
+
+  // ---------- DOM refs ----------
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+  var stage = document.getElementById("stage");
+  var capPanel = document.getElementById("capPanel");
+
+  function fmt(n, d) { d = d === undefined ? 2 : d; if (Object.is(n, -0)) n = 0; return n.toFixed(d); }
+
+  // ---------- derived data ----------
+  function getCapacitorCharges() {
+    if (state.mode !== "capacitor") return [];
+    var arr = [];
+    var half = PLATE_LENGTH / 2;
+    for (var i = 0; i < PLATE_N; i++) {
+      var x = -half + (PLATE_LENGTH * i) / (PLATE_N - 1);
+      arr.push({ x: x, y: state.plateSeparation / 2, q: (state.platePolarity * state.plateCharge) / PLATE_N });
+      arr.push({ x: x, y: -state.plateSeparation / 2, q: (-state.platePolarity * state.plateCharge) / PLATE_N });
+    }
+    return arr;
+  }
+  function getCombinedCharges() {
+    var cap = getCapacitorCharges();
+    return state.mode === "capacitor" ? cap.concat(state.charges) : state.charges.slice();
+  }
+
+  // ---------- rendering ----------
+  function draw() {
+    var combined = getCombinedCharges();
+    var contourRes = combined.length > 10 ? [82, 58] : [110, 78];
+
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.fillStyle = "#0a0e12";
+    ctx.fillRect(0, 0, CW, CH);
+
+    if (state.showGrid) {
+      ctx.strokeStyle = "#182129";
+      ctx.lineWidth = 1;
+      for (var x = Math.ceil(X_MIN); x <= X_MAX; x++) {
+        var p1 = simToPx(x, 0);
+        ctx.beginPath(); ctx.moveTo(p1.px, 0); ctx.lineTo(p1.px, CH); ctx.stroke();
+      }
+      for (var y = Math.ceil(Y_MIN); y <= Y_MAX; y++) {
+        var p2 = simToPx(0, y);
+        ctx.beginPath(); ctx.moveTo(0, p2.py); ctx.lineTo(CW, p2.py); ctx.stroke();
+      }
+      ctx.strokeStyle = "#26323c";
+      ctx.lineWidth = 1.5;
+      var origin = simToPx(0, 0);
+      ctx.beginPath();
+      ctx.moveTo(origin.px, 0); ctx.lineTo(origin.px, CH);
+      ctx.moveTo(0, origin.py); ctx.lineTo(CW, origin.py);
+      ctx.stroke();
+    }
+
+    if (state.showField) {
+      var spacingPx = 46;
+      for (var px = spacingPx / 2; px < CW; px += spacingPx) {
+        for (var py = spacingPx / 2; py < CH; py += spacingPx) {
+          var s = pxToSim(px, py);
+          var f = fieldAt(s.x, s.y, combined);
+          var mag = Math.hypot(f.Ex, f.Ey);
+          if (mag < 1e-6) continue;
+          var len = Math.min(18, 4 + 5 * Math.log(1 + mag));
+          var ux = f.Ex / mag, uy = f.Ey / mag;
+          var x1 = px - (ux * len) / 2, y1 = py - (uy * len) / 2;
+          var x2 = px + (ux * len) / 2, y2 = py + (uy * len) / 2;
+          var t = Math.min(1, mag / 6);
+          var r = Math.round(80 + t * 175), g = Math.round(220 - t * 100), b = Math.round(160 - t * 100);
+          ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ",0.85)";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          var ah = 3.2, ang = Math.atan2(uy, ux);
+          ctx.beginPath();
+          ctx.moveTo(x2, y2);
+          ctx.lineTo(x2 - ah * Math.cos(ang - 0.5), y2 - ah * Math.sin(ang - 0.5));
+          ctx.lineTo(x2 - ah * Math.cos(ang + 0.5), y2 - ah * Math.sin(ang + 0.5));
+          ctx.closePath();
+          ctx.fillStyle = "rgba(" + r + "," + g + "," + b + ",0.85)";
+          ctx.fill();
+        }
+      }
+    }
+
+    if (state.showFieldLines) {
+      var seeds = [];
+      if (state.mode === "capacitor") {
+        var half = PLATE_LENGTH / 2;
+        var posY = state.platePolarity > 0 ? state.plateSeparation / 2 : -state.plateSeparation / 2;
+        for (var xx = -half + 0.35; xx <= half - 0.35 + 1e-6; xx += 0.55) {
+          seeds.push([xx, posY + (state.platePolarity > 0 ? 0.04 : -0.04)]);
+        }
+      }
+      for (var ci = 0; ci < state.charges.length; ci++) {
+        var c = state.charges[ci];
+        if (c.q > 0) {
+          var n = 10;
+          for (var kk = 0; kk < n; kk++) {
+            var ang2 = (2 * Math.PI * kk) / n;
+            seeds.push([c.x + MIN_R * 1.6 * Math.cos(ang2), c.y + MIN_R * 1.6 * Math.sin(ang2)]);
+          }
+        }
+      }
+      ctx.strokeStyle = "rgba(143,227,176,0.55)";
+      ctx.lineWidth = 1.1;
+      for (var si = 0; si < seeds.length; si++) {
+        var path = traceFieldLine(seeds[si][0], seeds[si][1], combined);
+        if (path.length < 2) continue;
+        ctx.beginPath();
+        for (var pi = 0; pi < path.length; pi++) {
+          var pp = simToPx(path[pi][0], path[pi][1]);
+          if (pi === 0) ctx.moveTo(pp.px, pp.py); else ctx.lineTo(pp.px, pp.py);
+        }
+        ctx.stroke();
+        var mid = Math.floor(path.length * 0.55);
+        if (mid > 1 && mid < path.length - 1) {
+          var A = simToPx(path[mid][0], path[mid][1]);
+          var B = simToPx(path[mid + 1][0], path[mid + 1][1]);
+          var ang3 = Math.atan2(B.py - A.py, B.px - A.px);
+          ctx.fillStyle = "rgba(143,227,176,0.75)";
+          ctx.beginPath();
+          ctx.moveTo(A.px + 4 * Math.cos(ang3), A.py + 4 * Math.sin(ang3));
+          ctx.lineTo(A.px - 3 * Math.cos(ang3 - 0.5), A.py - 3 * Math.sin(ang3 - 0.5));
+          ctx.lineTo(A.px - 3 * Math.cos(ang3 + 0.5), A.py - 3 * Math.sin(ang3 + 0.5));
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    ctx.strokeStyle = "rgba(255,111,174,0.9)";
+    ctx.lineWidth = 1.8;
+    var valueFn = function (x, y) { return fieldAt(x, y, combined).V; };
+    for (var ei = 0; ei < state.equipotentials.length; ei++) {
+      var segs = marchingSquares(valueFn, contourRes[0], contourRes[1], state.equipotentials[ei].level);
+      ctx.beginPath();
+      for (var sg = 0; sg < segs.length; sg++) {
+        var A2 = simToPx(segs[sg][0][0], segs[sg][0][1]);
+        var B2 = simToPx(segs[sg][1][0], segs[sg][1][1]);
+        ctx.moveTo(A2.px, A2.py); ctx.lineTo(B2.px, B2.py);
+      }
+      ctx.stroke();
+    }
+
+    if (state.mode === "capacitor") {
+      var half2 = PLATE_LENGTH / 2;
+      function drawPlate(yy, positive) {
+        var pp1 = simToPx(-half2, yy), pp2 = simToPx(half2, yy);
+        ctx.strokeStyle = positive ? "#ffb454" : "#5ad1ff";
+        ctx.lineWidth = 6; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(pp1.px, pp1.py); ctx.lineTo(pp2.px, pp2.py); ctx.stroke();
+        ctx.fillStyle = positive ? "#7a4b12" : "#0e5a75";
+        ctx.font = "bold 11px ui-monospace, monospace";
+        ctx.textAlign = "center";
+        for (var xv = -half2 + 0.4; xv <= half2 - 0.4; xv += 0.8) {
+          var p3 = simToPx(xv, yy);
+          ctx.fillText(positive ? "+" : "\u2212", p3.px, p3.py + (positive ? -8 : 14));
+        }
+      }
+      drawPlate(state.plateSeparation / 2, state.platePolarity > 0);
+      drawPlate(-state.plateSeparation / 2, state.platePolarity < 0);
+    }
+
+    for (var uci = 0; uci < state.charges.length; uci++) {
+      var uc = state.charges[uci];
+      var up = simToPx(uc.x, uc.y);
+      var isPos = uc.q > 0;
+      ctx.beginPath(); ctx.arc(up.px, up.py, 15, 0, Math.PI * 2);
+      ctx.fillStyle = isPos ? "#ffb454" : "#5ad1ff"; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = isPos ? "#7a4b12" : "#0e5a75"; ctx.stroke();
+      ctx.fillStyle = "#0a0e12";
+      ctx.font = "bold 16px ui-monospace, monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(isPos ? "+" : "\u2212", up.px, up.py + 1);
+    }
+
+    var sp = simToPx(state.sensor.x, state.sensor.y);
+    ctx.strokeStyle = "#ffe066"; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(sp.px - 9, sp.py); ctx.lineTo(sp.px + 9, sp.py);
+    ctx.moveTo(sp.px, sp.py - 9); ctx.lineTo(sp.px, sp.py + 9);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(sp.px, sp.py, 4, 0, Math.PI * 2); ctx.strokeStyle = "#ffe066"; ctx.stroke();
+
+    var testField = fieldAt(state.testCharge.x, state.testCharge.y, combined);
+    if (state.showTestCharge) {
+      var tp = simToPx(state.testCharge.x, state.testCharge.y);
+      var Fx = TEST_Q * testField.Ex, Fy = TEST_Q * testField.Ey;
+      var ax = Fx / TEST_MASS, ay = Fy / TEST_MASS;
+      var amag = Math.hypot(ax, ay);
+      ctx.beginPath(); ctx.arc(tp.px, tp.py, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#c6ff4d"; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = "#5c7a10"; ctx.stroke();
+      if (amag > 1e-6) {
+        var dirx = ax / amag, diry = ay / amag;
+        var len2 = Math.min(70, 14 + 12 * Math.log(1 + amag));
+        var ex = tp.px + dirx * len2, ey = tp.py + diry * len2;
+        ctx.strokeStyle = "#fff275"; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(tp.px, tp.py); ctx.lineTo(ex, ey); ctx.stroke();
+        var ang4 = Math.atan2(diry, dirx);
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - 8 * Math.cos(ang4 - 0.4), ey - 8 * Math.sin(ang4 - 0.4));
+        ctx.lineTo(ex - 8 * Math.cos(ang4 + 0.4), ey - 8 * Math.sin(ang4 + 0.4));
+        ctx.closePath();
+        ctx.fillStyle = "#fff275"; ctx.fill();
+      }
+    }
+
+    updateReadout(combined, testField);
+    updateHandles();
+    updateChips();
+  }
+
+  function updateReadout(combined, testField) {
+    var sf = fieldAt(state.sensor.x, state.sensor.y, combined);
+    document.getElementById("rV").textContent = fmt(sf.V) + " V";
+    document.getElementById("rE").textContent = fmt(Math.hypot(sf.Ex, sf.Ey)) + " N/C";
+    document.getElementById("rEx").textContent = fmt(sf.Ex);
+    document.getElementById("rEy").textContent = fmt(sf.Ey);
+
+    var testBoxQ = document.getElementById("testQBox");
+    var testBoxA = document.getElementById("testABox");
+    if (state.showTestCharge) {
+      testBoxQ.style.display = ""; testBoxA.style.display = "";
+      var Fx = TEST_Q * testField.Ex, Fy = TEST_Q * testField.Ey;
+      var amag = Math.hypot(Fx, Fy) / TEST_MASS;
+      document.getElementById("rTestQ").textContent = "+" + TEST_Q.toFixed(2);
+      document.getElementById("rTestA").textContent = fmt(amag);
+    } else {
+      testBoxQ.style.display = "none"; testBoxA.style.display = "none";
+    }
+  }
+
+  // ---------- draggable DOM handles ----------
+  var handleEls = {}; // id -> element
+
+  function makeHandle(type, id, title) {
+    var el = document.createElement("div");
+    el.className = "handle";
+    el.title = title || "";
+    el.addEventListener("pointerdown", function (e) {
+      dragging = { type: type, id: id };
+      e.preventDefault();
+    });
+    if (type === "charge") {
+      el.addEventListener("dblclick", function () {
+        state.charges = state.charges.filter(function (c) { return c.id !== id; });
+        rebuildHandles();
+        draw();
+      });
+    }
+    return el;
+  }
+
+  function rebuildHandles() {
+    Object.keys(handleEls).forEach(function (k) {
+      if (handleEls[k].parentNode) handleEls[k].parentNode.removeChild(handleEls[k]);
+    });
+    handleEls = {};
+    state.charges.forEach(function (c) {
+      var el = makeHandle("charge", c.id, "drag to move, double-click to remove");
+      stage.appendChild(el);
+      handleEls["charge-" + c.id] = el;
+    });
+    var sensorEl = makeHandle("sensor", "sensor", "drag the voltage/field sensor");
+    stage.appendChild(sensorEl);
+    handleEls["sensor"] = sensorEl;
+
+    var testEl = makeHandle("test", "test", "drag the tiny test charge");
+    stage.appendChild(testEl);
+    handleEls["test"] = testEl;
+    testEl.style.display = state.showTestCharge ? "" : "none";
+  }
+
+  function updateHandles() {
+    state.charges.forEach(function (c) {
+      var el = handleEls["charge-" + c.id];
+      if (!el) return;
+      var p = simToPx(c.x, c.y);
+      el.style.left = (p.px / CW) * 100 + "%";
+      el.style.top = (p.py / CH) * 100 + "%";
+    });
+    var sp = simToPx(state.sensor.x, state.sensor.y);
+    var sensorEl = handleEls["sensor"];
+    if (sensorEl) {
+      sensorEl.style.left = (sp.px / CW) * 100 + "%";
+      sensorEl.style.top = (sp.py / CH) * 100 + "%";
+    }
+    var tp = simToPx(state.testCharge.x, state.testCharge.y);
+    var testEl = handleEls["test"];
+    if (testEl) {
+      testEl.style.left = (tp.px / CW) * 100 + "%";
+      testEl.style.top = (tp.py / CH) * 100 + "%";
+      testEl.style.display = state.showTestCharge ? "" : "none";
+    }
+  }
+
+  function updateChips() {
+    var box = document.getElementById("chips");
+    box.innerHTML = "";
+    state.equipotentials.forEach(function (eq) {
+      var span = document.createElement("span");
+      span.className = "chip";
+      span.title = "click to remove";
+      span.textContent = fmt(eq.level) + " V \u2715";
+      span.addEventListener("click", function () {
+        state.equipotentials = state.equipotentials.filter(function (e) { return e.id !== eq.id; });
+        draw();
+      });
+      box.appendChild(span);
+    });
+  }
+
+  // ---------- pointer / drag handling ----------
+  function clientToSim(clientX, clientY) {
+    var rect = stage.getBoundingClientRect();
+    var px = ((clientX - rect.left) / rect.width) * CW;
+    var py = ((clientY - rect.top) / rect.height) * CH;
+    return pxToSim(px, py);
+  }
+
+  window.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var s = clientToSim(e.clientX, e.clientY);
+    var cx = Math.max(X_MIN, Math.min(X_MAX, s.x));
+    var cy = Math.max(Y_MIN, Math.min(Y_MAX, s.y));
+    if (dragging.type === "charge") {
+      state.charges.forEach(function (c) { if (c.id === dragging.id) { c.x = cx; c.y = cy; } });
+    } else if (dragging.type === "sensor") {
+      state.sensor = { x: cx, y: cy };
+    } else if (dragging.type === "test") {
+      state.testCharge = { x: cx, y: cy };
+    }
+    draw();
+  });
+  window.addEventListener("pointerup", function () { dragging = null; });
+
+  // ---------- UI wiring ----------
+  function setToggleBtn(btn, on, onColor, offColor) {
+    btn.style.color = on ? onColor : offColor;
+    btn.style.borderColor = (on ? onColor : offColor) + "55";
+  }
+
+  document.getElementById("addPos").addEventListener("click", function () {
+    state.charges.push({ id: nextId(), x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2, q: 1 });
+    rebuildHandles(); draw();
+  });
+  document.getElementById("addNeg").addEventListener("click", function () {
+    state.charges.push({ id: nextId(), x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2, q: -1 });
+    rebuildHandles(); draw();
+  });
+
+  var fieldLinesBtn = document.getElementById("toggleFieldLines");
+  fieldLinesBtn.addEventListener("click", function () {
+    state.showFieldLines = !state.showFieldLines;
+    fieldLinesBtn.textContent = "field lines " + (state.showFieldLines ? "on" : "off");
+    setToggleBtn(fieldLinesBtn, state.showFieldLines, "#8fe3b0", "#334049");
+    draw();
+  });
+
+  var fieldBtn = document.getElementById("toggleField");
+  fieldBtn.addEventListener("click", function () {
+    state.showField = !state.showField;
+    fieldBtn.textContent = "field vectors " + (state.showField ? "on" : "off");
+    setToggleBtn(fieldBtn, state.showField, "#8fe3b0", "#334049");
+    draw();
+  });
+
+  var gridBtn = document.getElementById("toggleGrid");
+  gridBtn.addEventListener("click", function () {
+    state.showGrid = !state.showGrid;
+    gridBtn.textContent = "grid " + (state.showGrid ? "on" : "off");
+    setToggleBtn(gridBtn, state.showGrid, "#8fe3b0", "#334049");
+    draw();
+  });
+
+  document.getElementById("traceEq").addEventListener("click", function () {
+    var combined = getCombinedCharges();
+    var V = fieldAt(state.sensor.x, state.sensor.y, combined).V;
+    state.equipotentials.push({ id: nextId(), level: V });
+    draw();
+  });
+
+  var testBtn = document.getElementById("toggleTest");
+  testBtn.addEventListener("click", function () {
+    state.showTestCharge = !state.showTestCharge;
+    testBtn.textContent = "test charge " + (state.showTestCharge ? "on" : "off");
+    setToggleBtn(testBtn, state.showTestCharge, "#c6ff4d", "#334049");
+    draw();
+  });
+
+  document.getElementById("resetAll").addEventListener("click", function () {
+    state.charges = [];
+    state.equipotentials = [];
+    state.sensor = { x: 0, y: 1.6 };
+    state.testCharge = { x: -2.6, y: -1.4 };
+    rebuildHandles();
+    draw();
+  });
+
+  var tabPoints = document.getElementById("tabPoints");
+  var tabCapacitor = document.getElementById("tabCapacitor");
+  function switchMode(m) {
+    state.mode = m;
+    state.equipotentials = [];
+    tabPoints.classList.toggle("active-tab", m === "points");
+    tabCapacitor.classList.toggle("active-tab", m === "capacitor");
+    capPanel.style.display = m === "capacitor" ? "" : "none";
+    draw();
+  }
+  tabPoints.addEventListener("click", function () { switchMode("points"); });
+  tabCapacitor.addEventListener("click", function () { switchMode("capacitor"); });
+
+  var dSlider = document.getElementById("dSlider");
+  var qSlider = document.getElementById("qSlider");
+  dSlider.addEventListener("input", function () {
+    state.plateSeparation = parseFloat(dSlider.value);
+    document.getElementById("dVal").textContent = state.plateSeparation.toFixed(2);
+    draw();
+  });
+  qSlider.addEventListener("input", function () {
+    state.plateCharge = parseFloat(qSlider.value);
+    document.getElementById("qVal").textContent = state.plateCharge.toFixed(1);
+    document.getElementById("idealE").textContent = (state.plateCharge / PLATE_LENGTH).toFixed(2);
+    draw();
+  });
+  document.getElementById("flipPolarity").addEventListener("click", function () {
+    state.platePolarity *= -1;
+    draw();
+  });
+
+  // ---------- init ----------
+  document.getElementById("idealE").textContent = (state.plateCharge / PLATE_LENGTH).toFixed(2);
+  rebuildHandles();
+  draw();
+})();
+</script>
+</body>
+</html>

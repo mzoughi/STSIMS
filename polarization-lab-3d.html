@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polarization Lab 3D — Two-Filter Malus's Law</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#080b16;
+    --bg-panel: rgba(19,25,45,0.72);
+    --bg-panel-solid:#121a30;
+    --line:#242f4d;
+    --line-soft: rgba(255,255,255,0.06);
+    --cyan:#4fd8ff;
+    --cyan-dim: rgba(79,216,255,0.35);
+    --violet:#b98bff;
+    --violet-dim: rgba(185,139,255,0.35);
+    --amber:#ffb454;
+    --amber-dim: rgba(255,180,84,0.35);
+    --text:#e8ecf7;
+    --text-dim:#8291b8;
+    --text-faint:#4d5a7d;
+    --radius: 14px;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, #14203f 0%, transparent 60%),
+      var(--bg-deep);
+    color:var(--text);
+    min-height:100vh;
+  }
+
+  .app{ max-width:1220px; margin:0 auto; padding:32px 20px 48px; }
+
+  header{ display:flex; flex-direction:column; gap:4px; margin-bottom:22px; }
+  .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.28em; color:var(--amber); text-transform:uppercase; }
+  h1{ font-size:clamp(24px, 4vw, 34px); font-weight:700; margin:2px 0 4px; letter-spacing:-0.01em; }
+  .subtitle{ color:var(--text-dim); font-size:14.5px; max-width:700px; line-height:1.55; }
+
+  main{ display:grid; grid-template-columns: minmax(0,1.65fr) minmax(300px, 1fr); gap:20px; }
+  @media (max-width:900px){ main{ grid-template-columns: 1fr; } }
+
+  /* ---------- Stage ---------- */
+
+  .stage-wrap{
+    position:relative; border-radius: var(--radius); padding:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), var(--bg-panel-solid);
+    border:1px solid var(--line);
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+  }
+
+  .stage-inner{
+    position:relative; border-radius:10px; overflow:hidden;
+    background: radial-gradient(circle at 50% 40%, #101833 0%, #070a15 75%);
+  }
+
+  #stage3d{ width:100%; height:460px; display:block; cursor:grab; touch-action:none; }
+  #stage3d.dragging{ cursor:grabbing; }
+  #stage3d canvas{ display:block; }
+
+  .fallback-msg{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    text-align:center; padding:30px; color:var(--text-dim); font-size:13px; line-height:1.6;
+  }
+  .fallback-msg.show{ display:flex; }
+
+  .corner{ position:absolute; width:20px; height:20px; border-color: var(--amber); opacity:0.75; pointer-events:none; }
+  .corner.tl{ top:8px; left:8px; border-top:2px solid; border-left:2px solid; border-top-left-radius:6px;}
+  .corner.tr{ top:8px; right:8px; border-top:2px solid; border-right:2px solid; border-top-right-radius:6px;}
+  .corner.bl{ bottom:8px; left:8px; border-bottom:2px solid; border-left:2px solid; border-bottom-left-radius:6px;}
+  .corner.br{ bottom:8px; right:8px; border-bottom:2px solid; border-right:2px solid; border-bottom-right-radius:6px;}
+
+  .status{
+    position:absolute; top:16px; right:16px; display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.14em; color:var(--text-dim);
+    background: rgba(8,11,22,0.55); padding:5px 9px 5px 7px; border-radius:999px; border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .status-dot{ width:7px; height:7px; border-radius:50%; background:#ff5f5f; }
+  .status.playing .status-dot{ background:#57e08a; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(87,224,138,0.55);} 50%{ box-shadow:0 0 0 5px rgba(87,224,138,0);} }
+
+  .hint{
+    position:absolute; bottom:16px; left:16px; display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.06em; color:var(--text-faint);
+    background: rgba(8,11,22,0.55); padding:5px 9px; border-radius:999px; border:1px solid var(--line);
+    pointer-events:none;
+  }
+
+  .legend{
+    display:flex; gap:18px; flex-wrap:wrap;
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.05em; color:var(--text-dim);
+    padding:12px 6px 0; text-transform:uppercase;
+  }
+  .legend span.dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+
+  /* ---------- Panel ---------- */
+
+  .panel{
+    display:flex; flex-direction:column; gap:16px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; backdrop-filter: blur(6px); height:fit-content;
+  }
+
+  .panel-title{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.22em; color:var(--text-faint); text-transform:uppercase; }
+
+  .filter-block{ border-left:3px solid var(--violet); padding-left:12px; display:flex; flex-direction:column; gap:8px; }
+  .filter-block.f2{ border-left-color: var(--amber); }
+
+  .filter-block .fb-title{ font-size:12.5px; font-weight:600; display:flex; justify-content:space-between; align-items:baseline; }
+  .filter-block .fb-title .val{ font-family:'IBM Plex Mono', monospace; font-size:17px; color:var(--violet); font-variant-numeric: tabular-nums; }
+  .filter-block.f2 .fb-title .val{ color:var(--amber); }
+
+  input[type="range"]{
+    -webkit-appearance:none; width:100%; height:6px; border-radius:999px; outline:none;
+    background: linear-gradient(90deg, var(--cyan-dim), var(--violet-dim));
+  }
+  .filter-block.f2 input[type="range"]{ background: linear-gradient(90deg, var(--violet-dim), var(--amber-dim)); }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--violet);
+    border:2px solid #120a1e; box-shadow: 0 0 0 4px rgba(185,139,255,0.18); cursor:pointer;
+  }
+  .filter-block.f2 input[type="range"]::-webkit-slider-thumb{ background:var(--amber); box-shadow: 0 0 0 4px rgba(255,180,84,0.18); border-color:#1a1408; }
+  input[type="range"]::-moz-range-thumb{ width:16px; height:16px; border-radius:50%; background:var(--violet); border:2px solid #120a1e; cursor:pointer; }
+  .filter-block.f2 input[type="range"]::-moz-range-thumb{ background:var(--amber); border-color:#1a1408; }
+
+  .quick-sets{ display:flex; gap:6px; }
+  button{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.03em; color:var(--text);
+    background: rgba(255,255,255,0.04); border:1px solid var(--line); padding:7px 8px; border-radius:8px;
+    cursor:pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  button:hover{ background: rgba(255,255,255,0.08); border-color:#3a4874; }
+  button:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+  .quick-sets button{ flex:1; }
+
+  .readouts{ display:flex; flex-direction:column; gap:9px; border-top:1px solid var(--line); padding-top:12px; }
+  .readout{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px dashed var(--line); padding-bottom:7px; }
+  .readout .label{ font-size:12px; color:var(--text-dim); }
+  .readout .value{ font-family:'IBM Plex Mono', monospace; font-size:17px; font-weight:600; color:var(--text); font-variant-numeric: tabular-nums; }
+  .readout.final .value{ color:var(--amber); font-size:19px; }
+
+  .btn-row{ display:flex; gap:8px; }
+  .btn-row button{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; }
+  #playPause{ color:var(--amber); border-color: var(--amber-dim); }
+  #resetView{ color:var(--cyan); border-color: var(--cyan-dim); }
+
+  .malus-block{ border-top:1px solid var(--line); padding-top:12px; }
+  .malus-title{ font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:6px; font-family:'IBM Plex Mono', monospace; }
+  svg#malusGraph{ width:100%; height:auto; display:block; }
+
+  .formula{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-dim);
+    background: rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; line-height:1.65;
+  }
+  .formula b{ color:var(--text); }
+
+  footer{ margin-top:22px; color:var(--text-dim); font-size:13px; line-height:1.6; max-width:860px; }
+  footer b{ color:var(--text); font-weight:600; }
+  .callout{
+    margin-top:10px; padding:10px 14px; border-radius:10px;
+    border:1px solid rgba(185,139,255,0.25); background: rgba(185,139,255,0.06);
+    font-size:12.5px; color:var(--text-dim);
+  }
+  .callout b{ color:var(--violet); }
+
+  @media (prefers-reduced-motion: reduce){ .status.playing .status-dot{ animation:none; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <span class="eyebrow">Optics Bench · 02</span>
+    <h1>Polarization Lab 3D</h1>
+    <p class="subtitle">A polarized wave (cyan) travels through two independently rotatable filters, producing three distinct wave segments. Drag either filter's handle to rotate its axis, or drag empty space to orbit the camera.</p>
+  </header>
+
+  <main>
+    <section class="stage-wrap">
+      <div class="stage-inner">
+        <div id="stage3d"></div>
+        <div class="fallback-msg" id="fallbackMsg">3D renderer failed to load — this demo needs an internet connection to fetch three.js. Check your connection and reload.</div>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div class="status playing" id="statusBadge"><span class="status-dot"></span><span id="statusText">LIVE</span></div>
+        <div class="hint">drag filter handle to rotate · drag background to orbit · scroll to zoom</div>
+      </div>
+      <div class="legend">
+        <div><span class="dot" style="background:var(--cyan)"></span>Wave A — source (0°, fixed)</div>
+        <div><span class="dot" style="background:var(--violet)"></span>Wave B — after filter 1</div>
+        <div><span class="dot" style="background:var(--amber)"></span>Wave C — after filter 2 (final)</div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-title">Instrument Readout</div>
+
+      <div class="filter-block f1">
+        <div class="fb-title"><span>Filter 1 axis (θ₁)</span><span class="val" id="angle1Val">45°</span></div>
+        <input type="range" id="angleSlider1" min="0" max="180" step="1" value="45" aria-label="Filter 1 axis angle in degrees">
+        <div class="quick-sets">
+          <button type="button" data-filter="1" data-angle="0">0°</button>
+          <button type="button" data-filter="1" data-angle="45">45°</button>
+          <button type="button" data-filter="1" data-angle="90">90°</button>
+        </div>
+      </div>
+
+      <div class="filter-block f2">
+        <div class="fb-title"><span>Filter 2 axis (θ₂)</span><span class="val" id="angle2Val">90°</span></div>
+        <input type="range" id="angleSlider2" min="0" max="180" step="1" value="90" aria-label="Filter 2 axis angle in degrees">
+        <div class="quick-sets">
+          <button type="button" data-filter="2" data-angle="0">0°</button>
+          <button type="button" data-filter="2" data-angle="45">45°</button>
+          <button type="button" data-filter="2" data-angle="90">90°</button>
+        </div>
+      </div>
+
+      <div class="readouts">
+        <div class="readout"><span class="label">After filter 1 (I₁/I₀)</span><span class="value" id="i1Val">50%</span></div>
+        <div class="readout final"><span class="label">Final, after filter 2 (I₂/I₀)</span><span class="value" id="i2Val">50%</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="playPause" type="button">⏸ Pause</button>
+        <button id="resetView" type="button">⟲ Reset view</button>
+      </div>
+
+      <div class="malus-block">
+        <div class="malus-title" id="malusTitle">Final I/I₀ vs θ₁ (θ₂ fixed)</div>
+        <svg id="malusGraph" viewBox="0 0 220 130"></svg>
+      </div>
+
+      <div class="formula" id="formulaText"></div>
+    </aside>
+  </main>
+
+  <footer>
+    <b>How it works:</b> the source emits light polarized vertically. Filter 1 passes only the component along its own axis (I₁ = I₀cos²θ₁), rotating that light to its own axis direction. Filter 2 then only passes the component of <i>that</i> light along its axis (I₂ = I₁cos²(θ₂−θ₁)).
+    <div class="callout"><b>Try this:</b> set Filter 1 to 0° and Filter 2 to 90° — crossed filters, no light gets through. Now slide Filter 1 to 45° without touching Filter 2. Light reappears, even though the outer two filters are still crossed at 90° to each other. Inserting a filter <i>between</i> crossed polarizers can unlock transmission — the classic "three‑polarizer paradox."</div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function(){
+
+  if (typeof THREE === 'undefined'){
+    document.getElementById('fallbackMsg').classList.add('show');
+    return;
+  }
+
+  // ---------- DOM ----------
+  const container = document.getElementById('stage3d');
+  const slider1 = document.getElementById('angleSlider1');
+  const slider2 = document.getElementById('angleSlider2');
+  const angle1Val = document.getElementById('angle1Val');
+  const angle2Val = document.getElementById('angle2Val');
+  const i1Val = document.getElementById('i1Val');
+  const i2Val = document.getElementById('i2Val');
+  const formulaText = document.getElementById('formulaText');
+  const playPauseBtn = document.getElementById('playPause');
+  const resetViewBtn = document.getElementById('resetView');
+  const statusBadge = document.getElementById('statusBadge');
+  const statusText = document.getElementById('statusText');
+  const malusGraph = document.getElementById('malusGraph');
+  const malusTitle = document.getElementById('malusTitle');
+
+  // ---------- state ----------
+  let theta1 = 45, theta2 = 90;
+  let phase = 0;
+  let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let filterDragIndex = -1;   // -1 none, 0 or 1
+  let orbitDragging = false;
+  let userHasOrbited = false;
+  let lastPointer = {x:0, y:0};
+
+  const COL = { A: 0x4fd8ff, B: 0xb98bff, C: 0xffb454 };
+  const A0 = 0.85;
+  const R = 1.3;
+  const K = (2*Math.PI)/1.15;
+
+  const Z = { source:-6.5, f1:-2.3, f2:2.1, screen:6.5 };
+
+  // ---------- three.js setup ----------
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x080b16, 0.028);
+
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x445577, 1.2));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.55);
+  dirLight.position.set(5, 8, 4);
+  scene.add(dirLight);
+
+  const grid = new THREE.GridHelper(26, 26, 0x2a3560, 0x161d38);
+  grid.position.y = -2.6;
+  grid.material.transparent = true;
+  grid.material.opacity = 0.5;
+  scene.add(grid);
+
+  // ---------- camera orbit ----------
+  const camTarget = new THREE.Vector3(0,0,0);
+  const camDefault = { radius: 12.5, azimuth: 0.55, polar: 1.15 };
+  const cam = { radius: camDefault.radius, azimuth: camDefault.azimuth, polar: camDefault.polar };
+
+  function updateCamera(){
+    camera.position.x = camTarget.x + cam.radius * Math.sin(cam.polar) * Math.sin(cam.azimuth);
+    camera.position.y = camTarget.y + cam.radius * Math.cos(cam.polar);
+    camera.position.z = camTarget.z + cam.radius * Math.sin(cam.polar) * Math.cos(cam.azimuth);
+    camera.lookAt(camTarget);
+  }
+
+  // ---------- projector ----------
+  function buildProjector(){
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(1.3, 0.9, 1.7),
+      new THREE.MeshStandardMaterial({ color:0x141b30, roughness:0.6, metalness:0.2 })
+    );
+    g.add(body);
+    const lens = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.32, 0.25, 24),
+      new THREE.MeshBasicMaterial({ color: COL.A })
+    );
+    lens.rotation.x = Math.PI/2;
+    lens.position.z = 0.95;
+    g.add(lens);
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.45, 16, 16),
+      new THREE.MeshBasicMaterial({ color: COL.A, transparent:true, opacity:0.25 })
+    );
+    glow.position.z = 1.05;
+    g.add(glow);
+    g.position.z = Z.source;
+    scene.add(g);
+    return g;
+  }
+  buildProjector();
+
+  // ---------- screen ----------
+  function makeGlowTexture(){
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createRadialGradient(128,128,0,128,128,128);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,256,256);
+    return new THREE.CanvasTexture(c);
+  }
+  const glowTex = makeGlowTexture();
+
+  const screenPanel = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.8, 3.8),
+    new THREE.MeshStandardMaterial({ color:0x141b30, roughness:0.7, side: THREE.DoubleSide })
+  );
+  screenPanel.position.z = Z.screen;
+  scene.add(screenPanel);
+
+  const screenLit = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.3, 3.3),
+    new THREE.MeshBasicMaterial({ color:0x3a2c1c, transparent:true, opacity:0.4, side: THREE.DoubleSide })
+  );
+  screenLit.position.z = Z.screen + 0.02;
+  scene.add(screenLit);
+
+  const screenGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffb454, transparent:true, opacity:0.4, depthWrite:false }));
+  screenGlow.position.z = Z.screen - 0.3;
+  screenGlow.scale.set(2,2,1);
+  scene.add(screenGlow);
+
+  function lerpColor(hexA, hexB, t){
+    const a = new THREE.Color(hexA), b = new THREE.Color(hexB);
+    return a.lerp(b, t);
+  }
+
+  function updateScreen(frac){
+    const c = lerpColor(0x2a2015, 0xfff3d6, frac);
+    screenLit.material.color = c;
+    screenLit.material.opacity = 0.25 + 0.7 * frac;
+    screenGlow.material.opacity = 0.12 + 0.65 * frac;
+    const s = 1.1 + 2.3 * frac;
+    screenGlow.scale.set(s, s, 1);
+  }
+
+  // ---------- wave visual class ----------
+  function WaveVisual(colorHex, samples){
+    samples = samples || 64;
+    this.samples = samples;
+    this.colorHex = colorHex;
+
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(samples*3), 3));
+    this.line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: colorHex, transparent:true, opacity:1 }));
+    scene.add(this.line);
+
+    const ribbonGeom = new THREE.BufferGeometry();
+    ribbonGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(samples*2*3), 3));
+    const idx = [];
+    for(let i=0;i<samples-1;i++){
+      const a=i*2, b=i*2+1, c=(i+1)*2, d=(i+1)*2+1;
+      idx.push(a,b,c, b,d,c);
+    }
+    ribbonGeom.setIndex(idx);
+    this.ribbon = new THREE.Mesh(ribbonGeom, new THREE.MeshBasicMaterial({
+      color: colorHex, transparent:true, opacity:0.1, side: THREE.DoubleSide, depthWrite:false
+    }));
+    scene.add(this.ribbon);
+
+    this.tickCount = Math.floor(samples/4);
+    const tickGeom = new THREE.BufferGeometry();
+    tickGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.tickCount*2*3), 3));
+    this.ticks = new THREE.LineSegments(tickGeom, new THREE.LineBasicMaterial({ color: colorHex, transparent:true, opacity:0.3 }));
+    scene.add(this.ticks);
+  }
+  WaveVisual.prototype.update = function(z0, z1, angleDeg, amp, phaseVal, intensityFrac){
+    const n = this.samples;
+    const visible = (z1 - z0) > 0.05 && amp > 0.01;
+    this.line.visible = this.ribbon.visible = this.ticks.visible = visible;
+    if(!visible) return;
+
+    const rad = angleDeg * Math.PI/180;
+    const sinA = Math.sin(rad), cosA = Math.cos(rad);
+    const linePos = this.line.geometry.attributes.position.array;
+    const ribbonPos = this.ribbon.geometry.attributes.position.array;
+    const tickPos = this.ticks.geometry.attributes.position.array;
+    let tickIdx = 0;
+
+    for(let i=0;i<n;i++){
+      const tt = i/(n-1);
+      const z = z0 + (z1-z0)*tt;
+      const local = z - z0;
+      const val = Math.sin(local*K - phaseVal);
+      const x = amp * sinA * val;
+      const y = amp * cosA * val;
+
+      linePos[i*3] = x; linePos[i*3+1] = y; linePos[i*3+2] = z;
+      ribbonPos[i*6] = 0; ribbonPos[i*6+1] = 0; ribbonPos[i*6+2] = z;
+      ribbonPos[i*6+3] = x; ribbonPos[i*6+4] = y; ribbonPos[i*6+5] = z;
+
+      if(i % 4 === 0 && tickIdx < this.tickCount){
+        const b = tickIdx*6;
+        tickPos[b]=0; tickPos[b+1]=0; tickPos[b+2]=z;
+        tickPos[b+3]=x; tickPos[b+4]=y; tickPos[b+5]=z;
+        tickIdx++;
+      }
+    }
+    this.line.geometry.attributes.position.needsUpdate = true;
+    this.ribbon.geometry.attributes.position.needsUpdate = true;
+    this.ticks.geometry.attributes.position.needsUpdate = true;
+
+    const glow = Math.min(1, 0.3 + 0.85*intensityFrac);
+    this.line.material.opacity = Math.min(1, 0.35 + 0.65*glow);
+    this.ribbon.material.opacity = 0.10 * glow + 0.01;
+    this.ticks.material.opacity = 0.30 * glow;
+  };
+
+  const waveA = new WaveVisual(COL.A);
+  const waveB = new WaveVisual(COL.B);
+  const waveC = new WaveVisual(COL.C);
+
+  // ---------- filter dial ----------
+  function FilterDial(z, colorHex){
+    this.z = z;
+    this.color = colorHex;
+    this.angle = 45;
+
+    this.group = new THREE.Group();
+    this.group.position.z = z;
+    scene.add(this.group);
+
+    this.group.add(new THREE.Mesh(
+      new THREE.TorusGeometry(R, 0.045, 10, 60),
+      new THREE.MeshStandardMaterial({ color:0x3a4874, roughness:0.4, metalness:0.4 })
+    ));
+
+    // tick marks around the ring (0/90 highlighted)
+    for(let a=0; a<360; a+=15){
+      const rad = a*Math.PI/180;
+      const isMain = (a % 90 === 0);
+      const outer = R + 0.02, inner = R - (isMain ? 0.16 : 0.09);
+      const geom = new THREE.BufferGeometry();
+      const p = new Float32Array([
+        Math.sin(rad)*outer, Math.cos(rad)*outer, 0,
+        Math.sin(rad)*inner, Math.cos(rad)*inner, 0
+      ]);
+      geom.setAttribute('position', new THREE.BufferAttribute(p,3));
+      const mat = new THREE.LineBasicMaterial({ color: isMain ? colorHex : 0x445273, transparent:true, opacity: isMain?0.7:0.4 });
+      this.group.add(new THREE.Line(geom, mat));
+    }
+
+    this.disc = new THREE.Mesh(
+      new THREE.CircleGeometry(R - 0.02, 56),
+      new THREE.MeshStandardMaterial({ color:0x141b30, transparent:true, opacity:0.32, side: THREE.DoubleSide, roughness:0.8 })
+    );
+    this.group.add(this.disc);
+
+    this.grilleGroup = new THREE.Group();
+    this.group.add(this.grilleGroup);
+
+    const axisGeom = new THREE.BufferGeometry();
+    axisGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+    this.axisLine = new THREE.Line(axisGeom, new THREE.LineBasicMaterial({ color: colorHex, linewidth:2 }));
+    this.group.add(this.axisLine);
+
+    this.handle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.13, 18, 18),
+      new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity:0.7, roughness:0.3 })
+    );
+    this.group.add(this.handle);
+
+    this.handle2 = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 14, 14),
+      new THREE.MeshBasicMaterial({ color: colorHex, transparent:true, opacity:0.5 })
+    );
+    this.group.add(this.handle2);
+
+    this.setAngle(this.angle);
+  }
+
+  FilterDial.prototype.setAngle = function(deg){
+    this.angle = ((deg % 180) + 180) % 180;
+    const rad = this.angle * Math.PI/180;
+    const dx = Math.sin(rad), dy = Math.cos(rad);
+    const p1 = [dx*R, dy*R, 0];
+    const p2 = [-dx*R, -dy*R, 0];
+
+    const pos = this.axisLine.geometry.attributes.position.array;
+    pos[0]=p1[0]; pos[1]=p1[1]; pos[2]=0;
+    pos[3]=p2[0]; pos[4]=p2[1]; pos[5]=0;
+    this.axisLine.geometry.attributes.position.needsUpdate = true;
+
+    this.handle.position.set(p1[0], p1[1], 0);
+    this.handle2.position.set(p2[0], p2[1], 0);
+
+    // rebuild grille lines (perpendicular offset, parallel to axis)
+    while(this.grilleGroup.children.length){
+      const c = this.grilleGroup.children.pop();
+      c.geometry.dispose(); c.material.dispose();
+    }
+    const perpX = dy, perpY = -dx;
+    const count = 7;
+    for(let k=-3;k<=3;k++){
+      const off = k * (R*2/9);
+      const halfLen = Math.sqrt(Math.max(0, R*R - off*off)) * 0.94;
+      if (halfLen < 0.05) continue;
+      const sx = perpX*off - dx*halfLen, sy = perpY*off - dy*halfLen;
+      const ex = perpX*off + dx*halfLen, ey = perpY*off + dy*halfLen;
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([sx,sy,0, ex,ey,0]), 3));
+      const mat = new THREE.LineBasicMaterial({ color: this.color, transparent:true, opacity:0.22 });
+      this.grilleGroup.add(new THREE.Line(geom, mat));
+    }
+  };
+
+  const filter1 = new FilterDial(Z.f1, COL.B);
+  const filter2 = new FilterDial(Z.f2, COL.C);
+  filter1.setAngle(theta1);
+  filter2.setAngle(theta2);
+
+  const filters = [filter1, filter2];
+
+  // ---------- physics ----------
+  function computeFractions(){
+    const r1 = theta1*Math.PI/180;
+    const r2diff = (theta2-theta1)*Math.PI/180;
+    const f1 = Math.pow(Math.cos(r1), 2);
+    const f2 = f1 * Math.pow(Math.cos(r2diff), 2);
+    return { f1, f2 };
+  }
+
+  function updateReadouts(){
+    const { f1, f2 } = computeFractions();
+    angle1Val.textContent = Math.round(theta1) + '°';
+    angle2Val.textContent = Math.round(theta2) + '°';
+    i1Val.textContent = Math.round(f1*100) + '%';
+    i2Val.textContent = Math.round(f2*100) + '%';
+    formulaText.innerHTML =
+      'I₁ = I₀cos²θ₁ = I₀cos²(' + Math.round(theta1) + '°) = <b>' + f1.toFixed(2) + ' I₀</b><br>' +
+      'I₂ = I₁cos²(θ₂−θ₁) = I₁cos²(' + Math.round(theta2-theta1) + '°) = <b>' + f2.toFixed(2) + ' I₀</b>';
+    updateMalusMarker();
+  }
+
+  // ---------- malus mini graph (final I vs theta1, theta2 fixed) ----------
+  function buildMalusGraph(){
+    const vb = { w:220, h:130 };
+    const margin = { l:24, r:10, t:10, b:22 };
+    const plotW = vb.w - margin.l - margin.r;
+    const plotH = vb.h - margin.t - margin.b;
+    const ns = 'http://www.w3.org/2000/svg';
+
+    malusGraph.innerHTML = '';
+    malusGraph.setAttribute('viewBox', `0 0 ${vb.w} ${vb.h}`);
+
+    let d = '';
+    for(let a=0; a<=180; a+=2){
+      const r1 = a*Math.PI/180;
+      const r2 = (theta2-a)*Math.PI/180;
+      const f = Math.pow(Math.cos(r1),2) * Math.pow(Math.cos(r2),2);
+      const px = margin.l + (a/180)*plotW;
+      const py = margin.t + (1-f)*plotH;
+      d += (a===0?'M':'L') + px.toFixed(1) + ',' + py.toFixed(1) + ' ';
+    }
+
+    const axisColor = 'rgba(130,145,184,0.4)';
+    const yA = document.createElementNS(ns,'line');
+    yA.setAttribute('x1',margin.l); yA.setAttribute('y1',margin.t);
+    yA.setAttribute('x2',margin.l); yA.setAttribute('y2',margin.t+plotH);
+    yA.setAttribute('stroke', axisColor);
+    malusGraph.appendChild(yA);
+
+    const xA = document.createElementNS(ns,'line');
+    xA.setAttribute('x1',margin.l); xA.setAttribute('y1',margin.t+plotH);
+    xA.setAttribute('x2',margin.l+plotW); xA.setAttribute('y2',margin.t+plotH);
+    xA.setAttribute('stroke', axisColor);
+    malusGraph.appendChild(xA);
+
+    const path = document.createElementNS(ns,'path');
+    path.setAttribute('d', d.trim());
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','#ffb454');
+    path.setAttribute('stroke-width','2');
+    malusGraph.appendChild(path);
+
+    [[0,'0°'],[90,'90°'],[180,'180°']].forEach(([a,label])=>{
+      const t = document.createElementNS(ns,'text');
+      const px = margin.l + (a/180)*plotW;
+      t.setAttribute('x', a===180 ? px-14 : (a===0?px:px-9));
+      t.setAttribute('y', vb.h-6);
+      t.setAttribute('font-size','9');
+      t.setAttribute('font-family','IBM Plex Mono, monospace');
+      t.setAttribute('fill','#8291b8');
+      t.textContent = label;
+      malusGraph.appendChild(t);
+    });
+
+    const guide = document.createElementNS(ns,'line');
+    guide.setAttribute('id','malusGuide');
+    guide.setAttribute('stroke','rgba(185,139,255,0.4)');
+    guide.setAttribute('stroke-width','1');
+    guide.setAttribute('stroke-dasharray','3,3');
+    malusGraph.appendChild(guide);
+
+    const marker = document.createElementNS(ns,'circle');
+    marker.setAttribute('id','malusMarker');
+    marker.setAttribute('r','4.5');
+    marker.setAttribute('fill','#b98bff');
+    marker.setAttribute('stroke','#120a1e');
+    marker.setAttribute('stroke-width','1.5');
+    malusGraph.appendChild(marker);
+
+    malusGraph._geom = { margin, plotW, plotH };
+    malusTitle.textContent = 'Final I/I₀ vs θ₁ (θ₂ = ' + Math.round(theta2) + '° fixed)';
+  }
+
+  function updateMalusMarker(){
+    const g = malusGraph._geom;
+    if(!g) return;
+    const { f2 } = computeFractions();
+    const px = g.margin.l + (theta1/180)*g.plotW;
+    const py = g.margin.t + (1-f2)*g.plotH;
+    const marker = malusGraph.querySelector('#malusMarker');
+    const guide = malusGraph.querySelector('#malusGuide');
+    if(marker){ marker.setAttribute('cx',px); marker.setAttribute('cy',py); }
+    if(guide){
+      guide.setAttribute('x1',px); guide.setAttribute('y1', g.margin.t+g.plotH);
+      guide.setAttribute('x2',px); guide.setAttribute('y2',py);
+    }
+  }
+
+  // ---------- render loop ----------
+  function render(){
+    if(playing) phase += 0.055;
+
+    const { f1, f2 } = computeFractions();
+    const ampB = A0 * Math.abs(Math.cos(theta1*Math.PI/180));
+    const ampC = ampB * Math.abs(Math.cos((theta2-theta1)*Math.PI/180));
+
+    waveA.update(Z.source+0.95, Z.f1-R-0.05, 0, A0, phase, 1);
+    waveB.update(Z.f1+R+0.05, Z.f2-R-0.05, theta1, ampB, phase, f1);
+    waveC.update(Z.f2+R+0.05, Z.screen-0.95, theta2, ampC, phase, f2);
+
+    updateScreen(f2);
+
+    if(!orbitDragging && !userHasOrbited) cam.azimuth += 0.0016;
+    updateCamera();
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
+
+  // ---------- resize ----------
+  function resize(){
+    const rect = container.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- pointer interaction ----------
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const plane = new THREE.Plane();
+  const hitPoint = new THREE.Vector3();
+
+  function setNDC(clientX, clientY){
+    const rect = container.getBoundingClientRect();
+    ndc.x = ((clientX - rect.left)/rect.width)*2 - 1;
+    ndc.y = -(((clientY - rect.top)/rect.height)*2 - 1);
+  }
+
+  function pickFilter(clientX, clientY){
+    setNDC(clientX, clientY);
+    raycaster.setFromCamera(ndc, camera);
+    let best = -1, bestDist = Infinity;
+    filters.forEach((f, idx) => {
+      plane.set(new THREE.Vector3(0,0,1), -f.z);
+      const hit = raycaster.ray.intersectPlane(plane, hitPoint);
+      if(!hit) return;
+      const d = Math.hypot(hitPoint.x, hitPoint.y);
+      if(d <= R + 0.55 && d < bestDist){
+        bestDist = d; best = idx;
+      }
+    });
+    return best;
+  }
+
+  function angleAtPointer(clientX, clientY, filterIdx){
+    setNDC(clientX, clientY);
+    raycaster.setFromCamera(ndc, camera);
+    const f = filters[filterIdx];
+    plane.set(new THREE.Vector3(0,0,1), -f.z);
+    const hit = raycaster.ray.intersectPlane(plane, hitPoint);
+    if(!hit) return f.angle;
+    let a = Math.atan2(hitPoint.x, hitPoint.y) * 180/Math.PI;
+    a = ((a % 180) + 180) % 180;
+    return a;
+  }
+
+  function applyAngle(idx, val){
+    if(idx === 0){ theta1 = val; slider1.value = Math.round(val); filter1.setAngle(val); }
+    else { theta2 = val; slider2.value = Math.round(val); filter2.setAngle(val); buildMalusGraph(); }
+    updateReadouts();
+  }
+
+  container.addEventListener('pointerdown', (e) => {
+    const idx = pickFilter(e.clientX, e.clientY);
+    if(idx >= 0){
+      filterDragIndex = idx;
+      container.classList.add('dragging');
+      container.setPointerCapture(e.pointerId);
+      applyAngle(idx, angleAtPointer(e.clientX, e.clientY, idx));
+    } else {
+      orbitDragging = true;
+      userHasOrbited = true;
+      container.classList.add('dragging');
+      container.setPointerCapture(e.pointerId);
+      lastPointer.x = e.clientX; lastPointer.y = e.clientY;
+    }
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if(filterDragIndex >= 0){
+      applyAngle(filterDragIndex, angleAtPointer(e.clientX, e.clientY, filterDragIndex));
+    } else if(orbitDragging){
+      const dx = e.clientX - lastPointer.x, dy = e.clientY - lastPointer.y;
+      lastPointer.x = e.clientX; lastPointer.y = e.clientY;
+      cam.azimuth -= dx * 0.006;
+      cam.polar = Math.min(Math.PI-0.35, Math.max(0.35, cam.polar - dy*0.006));
+    }
+  });
+
+  function stopDrag(){
+    filterDragIndex = -1;
+    orbitDragging = false;
+    container.classList.remove('dragging');
+  }
+  container.addEventListener('pointerup', stopDrag);
+  container.addEventListener('pointercancel', stopDrag);
+
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    cam.radius = Math.min(22, Math.max(6, cam.radius + e.deltaY*0.012));
+  }, { passive:false });
+
+  // ---------- controls ----------
+  slider1.addEventListener('input', () => applyAngle(0, parseFloat(slider1.value)));
+  slider2.addEventListener('input', () => applyAngle(1, parseFloat(slider2.value)));
+
+  document.querySelectorAll('.quick-sets button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.dataset.filter === '1' ? 0 : 1;
+      applyAngle(idx, parseFloat(btn.dataset.angle));
+    });
+  });
+
+  playPauseBtn.addEventListener('click', () => {
+    playing = !playing;
+    playPauseBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
+    statusBadge.classList.toggle('playing', playing);
+    statusText.textContent = playing ? 'LIVE' : 'PAUSED';
+  });
+
+  resetViewBtn.addEventListener('click', () => {
+    cam.radius = camDefault.radius;
+    cam.azimuth = camDefault.azimuth;
+    cam.polar = camDefault.polar;
+    userHasOrbited = false;
+  });
+
+  // ---------- init ----------
+  resize();
+  buildMalusGraph();
+  updateReadouts();
+  if(!playing){
+    playPauseBtn.textContent = '▶ Play';
+    statusBadge.classList.remove('playing');
+    statusText.textContent = 'PAUSED';
+  }
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
