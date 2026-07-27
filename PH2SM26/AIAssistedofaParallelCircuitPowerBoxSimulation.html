@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html><head></head><body>
+
+
+  
+  
+  
+  
+
+
+  <header>
+    <h1>Power Boxes - Parallel Circuit Safe Version</h1>
+    <div class="subtitle">
+      Adds branch switches, battery internal resistance, terminal-voltage labels, live equations, and animated current flow. The circuit drawing separates the positive node and negative return, so current must pass through a resistor branch.
+    </div>
+  </header>
+
+  <main>
+    <section class="card controls">
+      <h2>Battery</h2>
+
+      <div class="control-row">
+        <label for="emf">EMF battery voltage, E <span class="value"></span></label>
+        
+      </div>
+
+      <div class="control-row">
+        <label for="internalR">Internal resistance, r <span class="value"></span></label>
+        
+      </div>
+
+      <h2>Parallel Branches</h2>
+
+      <div class="branch-card">
+        <div class="branch-top">
+          <strong>Branch 1</strong>
+          <label class="toggle"> closed</label>
+        </div>
+        <label for="r0">R1 <span class="value"></span></label>
+        
+        <div class="button-row">
+          Set R1 = 1 ohm
+          Reset R1
+        </div>
+      </div>
+
+      <div class="branch-card">
+        <div class="branch-top">
+          <strong>Branch 2</strong>
+          <label class="toggle"> closed</label>
+        </div>
+        <label for="r1">R2 <span class="value"></span></label>
+        
+        <div class="button-row">
+          Set R2 = 1 ohm
+          Reset R2
+        </div>
+      </div>
+
+      <div class="branch-card">
+        <div class="branch-top">
+          <strong>Branch 3</strong>
+          <label class="toggle"> closed</label>
+        </div>
+        <label for="r2">R3 <span class="value"></span></label>
+        
+        <div class="button-row">
+          Set R3 = 1 ohm
+          Reset R3
+        </div>
+      </div>
+
+      <div class="button-row">
+        Close all branches
+        Open all branches
+      </div>
+
+      <div class="notice"></div>
+    </section>
+
+    <section class="card sim-wrap">
+      <canvas width="1050" height="660"></canvas>
+    </section>
+
+    <section class="card equations">
+      <h2>Live mathematical totals</h2>
+      <div class="eq-grid">
+        <div class="eq"></div>
+        <div class="eq"></div>
+        <div class="eq"></div>
+        <div class="eq"></div>
+      </div>
+    </section>
+  </main>
+
+  
+
+<script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/mathjax.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+					if (document.querySelector('math, .d2l-element, .d2l-cplus-layout') || /\$\$|\\\(|\\\[|\\begin{|\\ref{|\\eqref{/.test(document.body.innerHTML)) {
+						document.querySelectorAll('mspace[linebreak="newline"]').forEach(elm => {
+							elm.setAttribute('style', 'display: block; height: 0.5rem;');
+						});
+
+						document.querySelectorAll('math mmultiscripts > none').forEach(elm => {
+							const mrow = document.createElementNS('http://www.w3.org/1998/Math/MathML', 'mrow');
+							elm.replaceWith(mrow);
+						});
+
+						window.D2L.MathJax.loadMathJax({
+							outputScale: 1.5,
+							renderLatex: false,
+							enableMML3Support: false
+						});
+					}
+				});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/prism.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+					document.querySelectorAll('.d2l-code').forEach(code => {
+						window.D2L.Prism.formatCodeElement(code);
+					});
+				});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/embeds.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
+					window.D2L.EmbedRenderer.renderEmbeds(document.body);
+				});</script></body></html>
