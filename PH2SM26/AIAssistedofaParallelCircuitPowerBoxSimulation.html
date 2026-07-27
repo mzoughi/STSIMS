@@ -1,12 +1,212 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html><head></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safe Power Boxes - Parallel Circuit</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --ink: #151922;
+      --muted: #5c6575;
+      --border: #d7deea;
+      --accent: #2b67f6;
+      --danger: #d93025;
+      --warn: #f59f00;
+      --wire: #20242c;
+    }
 
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
 
-  
-  
-  
-  
+    header {
+      padding: 16px 20px 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
 
+    h1 {
+      margin: 0;
+      font-size: 22px;
+    }
 
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 330px minmax(650px, 1fr);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(20, 30, 60, 0.06);
+    }
+
+    .controls {
+      padding: 14px;
+    }
+
+    .controls h2 {
+      margin: 6px 0 10px;
+      font-size: 17px;
+    }
+
+    .control-row {
+      margin: 13px 0;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: 700;
+      font-size: 14px;
+      gap: 8px;
+    }
+
+    .value {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 7px;
+    }
+
+    .branch-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin: 11px 0;
+      background: #fbfcff;
+    }
+
+    .branch-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .toggle input {
+      transform: scale(1.1);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #f8faff;
+      padding: 8px 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #eef3ff;
+    }
+
+    .sim-wrap {
+      padding: 10px;
+      overflow: auto;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 1050px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .equations {
+      grid-column: 1 / -1;
+      padding: 14px 16px;
+    }
+
+    .equations h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .eq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .eq {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fbfcff;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .notice {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fff4e6;
+      border: 1px solid #ffd8a8;
+      color: #7a4b00;
+      font-weight: 700;
+      display: none;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .equations {
+        grid-column: 1;
+      }
+      .eq-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
   <header>
     <h1>Power Boxes - Parallel Circuit Safe Version</h1>
     <div class="subtitle">
@@ -19,13 +219,13 @@
       <h2>Battery</h2>
 
       <div class="control-row">
-        <label for="emf">EMF battery voltage, E <span class="value"></span></label>
-        
+        <label for="emf">EMF battery voltage, E <span class="value" id="emfVal"></span></label>
+        <input id="emf" type="range" min="1" max="24" step="0.1" value="12" />
       </div>
 
       <div class="control-row">
-        <label for="internalR">Internal resistance, r <span class="value"></span></label>
-        
+        <label for="internalR">Internal resistance, r <span class="value" id="internalRVal"></span></label>
+        <input id="internalR" type="range" min="0" max="10" step="0.1" value="1" />
       </div>
 
       <h2>Parallel Branches</h2>
@@ -33,88 +233,645 @@
       <div class="branch-card">
         <div class="branch-top">
           <strong>Branch 1</strong>
-          <label class="toggle"> closed</label>
+          <label class="toggle"><input id="closed0" type="checkbox" checked /> closed</label>
         </div>
-        <label for="r0">R1 <span class="value"></span></label>
-        
+        <label for="r0">R1 <span class="value" id="r0Val"></span></label>
+        <input id="r0" type="range" min="1" max="30" step="0.1" value="8" />
         <div class="button-row">
-          Set R1 = 1 ohm
-          Reset R1
+          <button id="short0">Set R1 = 1 ohm</button>
+          <button id="normal0">Reset R1</button>
         </div>
       </div>
 
       <div class="branch-card">
         <div class="branch-top">
           <strong>Branch 2</strong>
-          <label class="toggle"> closed</label>
+          <label class="toggle"><input id="closed1" type="checkbox" checked /> closed</label>
         </div>
-        <label for="r1">R2 <span class="value"></span></label>
-        
+        <label for="r1">R2 <span class="value" id="r1Val"></span></label>
+        <input id="r1" type="range" min="1" max="30" step="0.1" value="12" />
         <div class="button-row">
-          Set R2 = 1 ohm
-          Reset R2
+          <button id="short1">Set R2 = 1 ohm</button>
+          <button id="normal1">Reset R2</button>
         </div>
       </div>
 
       <div class="branch-card">
         <div class="branch-top">
           <strong>Branch 3</strong>
-          <label class="toggle"> closed</label>
+          <label class="toggle"><input id="closed2" type="checkbox" checked /> closed</label>
         </div>
-        <label for="r2">R3 <span class="value"></span></label>
-        
+        <label for="r2">R3 <span class="value" id="r2Val"></span></label>
+        <input id="r2" type="range" min="1" max="30" step="0.1" value="16" />
         <div class="button-row">
-          Set R3 = 1 ohm
-          Reset R3
+          <button id="short2">Set R3 = 1 ohm</button>
+          <button id="normal2">Reset R3</button>
         </div>
       </div>
 
       <div class="button-row">
-        Close all branches
-        Open all branches
+        <button id="allClosed">Close all branches</button>
+        <button id="allOpen">Open all branches</button>
       </div>
 
-      <div class="notice"></div>
+      <div class="notice" id="notice"></div>
     </section>
 
     <section class="card sim-wrap">
-      <canvas width="1050" height="660"></canvas>
+      <canvas id="simCanvas" width="1050" height="660"></canvas>
     </section>
 
     <section class="card equations">
       <h2>Live mathematical totals</h2>
       <div class="eq-grid">
-        <div class="eq"></div>
-        <div class="eq"></div>
-        <div class="eq"></div>
-        <div class="eq"></div>
+        <div class="eq" id="eqReq"></div>
+        <div class="eq" id="eqBattery"></div>
+        <div class="eq" id="eqBranches"></div>
+        <div class="eq" id="eqPower"></div>
       </div>
     </section>
   </main>
 
-  
+  <script>
+    const canvas = document.getElementById("simCanvas");
+    const ctx = canvas.getContext("2d");
 
-<script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/mathjax.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
-					if (document.querySelector('math, .d2l-element, .d2l-cplus-layout') || /\$\$|\\\(|\\\[|\\begin{|\\ref{|\\eqref{/.test(document.body.innerHTML)) {
-						document.querySelectorAll('mspace[linebreak="newline"]').forEach(elm => {
-							elm.setAttribute('style', 'display: block; height: 0.5rem;');
-						});
+    const els = {
+      emf: document.getElementById("emf"),
+      internalR: document.getElementById("internalR"),
+      emfVal: document.getElementById("emfVal"),
+      internalRVal: document.getElementById("internalRVal"),
+      notice: document.getElementById("notice"),
+      req: document.getElementById("eqReq"),
+      battery: document.getElementById("eqBattery"),
+      branches: document.getElementById("eqBranches"),
+      power: document.getElementById("eqPower"),
+      r: [
+        document.getElementById("r0"),
+        document.getElementById("r1"),
+        document.getElementById("r2")
+      ],
+      rVal: [
+        document.getElementById("r0Val"),
+        document.getElementById("r1Val"),
+        document.getElementById("r2Val")
+      ],
+      closed: [
+        document.getElementById("closed0"),
+        document.getElementById("closed1"),
+        document.getElementById("closed2")
+      ]
+    };
 
-						document.querySelectorAll('math mmultiscripts > none').forEach(elm => {
-							const mrow = document.createElementNS('http://www.w3.org/1998/Math/MathML', 'mrow');
-							elm.replaceWith(mrow);
-						});
+    const resetR = [8, 12, 16];
+    let phase = 0;
 
-						window.D2L.MathJax.loadMathJax({
-							outputScale: 1.5,
-							renderLatex: false,
-							enableMML3Support: false
-						});
-					}
-				});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/prism.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
-					document.querySelectorAll('.d2l-code').forEach(code => {
-						window.D2L.Prism.formatCodeElement(code);
-					});
-				});</script><script type="module" src="https://s.brightspace.com/lib/bsi/2026.7.209/unbundled/embeds.js"></script><script type="text/javascript">document.addEventListener('DOMContentLoaded', function() {
-					window.D2L.EmbedRenderer.renderEmbeds(document.body);
-				});</script></body></html>
+    function fmt(x, unit = "", digits = 2) {
+      if (x === Infinity) return "infinity" + (unit ? " " + unit : "");
+      if (Number.isNaN(x)) return "undefined";
+      if (Math.abs(x) < 0.00001) return "0" + (unit ? " " + unit : "");
+      const text = Number(x).toFixed(digits).replace(/\.?0+$/, "");
+      return text + (unit ? " " + unit : "");
+    }
+
+    function branchName(i) {
+      return "R" + (i + 1);
+    }
+
+    function getState() {
+      return {
+        E: Number(els.emf.value),
+        rInternal: Number(els.internalR.value),
+        // Clamp resistance to at least 1 ohm so the submitted version is not a short circuit.
+        R: els.r.map(el => Math.max(1, Number(el.value))),
+        closed: els.closed.map(el => el.checked)
+      };
+    }
+
+    function calculate() {
+      const s = getState();
+      const zeroBranches = [];
+      const activeNonZero = [];
+
+      for (let i = 0; i < 3; i++) {
+        if (!s.closed[i]) continue;
+        if (s.R[i] <= 0.00001) zeroBranches.push(i);
+        else activeNonZero.push(i);
+      }
+
+      const calc = {
+        ...s,
+        zeroBranches,
+        idealShort: false,
+        allOpen: zeroBranches.length === 0 && activeNonZero.length === 0,
+        Req: Infinity,
+        Itotal: 0,
+        Vterminal: s.E,
+        currents: [0, 0, 0],
+        powers: [0, 0, 0],
+        Pinternal: 0,
+        Pbattery: 0,
+        PloadTotal: 0
+      };
+
+      if (calc.allOpen) {
+        return calc;
+      }
+
+      if (zeroBranches.length > 0) {
+        calc.Req = 0;
+        calc.Vterminal = 0;
+
+        if (s.rInternal <= 0.00001) {
+          calc.idealShort = true;
+          calc.Itotal = Infinity;
+          for (const i of zeroBranches) calc.currents[i] = Infinity;
+          calc.Pbattery = Infinity;
+          calc.Pinternal = Infinity;
+          return calc;
+        }
+
+        calc.Itotal = s.E / s.rInternal;
+        const split = calc.Itotal / zeroBranches.length;
+        for (const i of zeroBranches) calc.currents[i] = split;
+        calc.Pinternal = calc.Itotal * calc.Itotal * s.rInternal;
+        calc.Pbattery = s.E * calc.Itotal;
+        return calc;
+      }
+
+      let conductance = 0;
+      for (const i of activeNonZero) {
+        conductance += 1 / s.R[i];
+      }
+
+      calc.Req = 1 / conductance;
+      calc.Itotal = s.E / (s.rInternal + calc.Req);
+      calc.Vterminal = s.E - calc.Itotal * s.rInternal;
+
+      for (const i of activeNonZero) {
+        calc.currents[i] = calc.Vterminal / s.R[i];
+        calc.powers[i] = calc.Vterminal * calc.currents[i];
+      }
+
+      calc.PloadTotal = calc.powers.reduce((a, b) => a + b, 0);
+      calc.Pinternal = calc.Itotal * calc.Itotal * s.rInternal;
+      calc.Pbattery = s.E * calc.Itotal;
+
+      return calc;
+    }
+
+    function updateText(calc) {
+      els.emfVal.textContent = fmt(calc.E, "V", 1);
+      els.internalRVal.textContent = fmt(calc.rInternal, "ohm", 1);
+
+      for (let i = 0; i < 3; i++) {
+        els.rVal[i].textContent = fmt(calc.R[i], "ohm", 1);
+      }
+
+      if (calc.idealShort) {
+        els.notice.textContent =
+          "Ideal short circuit: a closed branch has R = 0 ohm while internal resistance is also 0 ohm. The ideal model predicts infinite current, so the animation is capped only for display.";
+        els.notice.classList.add("show");
+      } else if (calc.zeroBranches.length > 0) {
+        els.notice.textContent =
+          "Short circuit: a closed branch has R = 0 ohm. Terminal voltage drops to 0 V, normal resistor branches receive 0 V, and current bypasses them through the short path.";
+        els.notice.classList.add("show");
+      } else if (calc.allOpen) {
+        els.notice.textContent =
+          "All branches are open. No current flows, so all power boxes shrink to zero.";
+        els.notice.classList.add("show");
+      } else {
+        els.notice.classList.remove("show");
+      }
+
+      const terms = [];
+      for (let i = 0; i < 3; i++) {
+        if (!calc.closed[i]) terms.push("branch " + (i + 1) + " open");
+        else if (calc.R[i] <= 0.00001) terms.push("1/0 -> short");
+        else terms.push("1/" + fmt(calc.R[i], "ohm", 1));
+      }
+
+      let reqLine;
+      if (calc.allOpen) {
+        reqLine = "R_eq = infinity ohm because every branch is open";
+      } else if (calc.zeroBranches.length > 0) {
+        reqLine = "R_eq = 0 ohm because at least one closed branch is a short";
+      } else {
+        reqLine = "1/R_eq = " + terms.filter(t => !t.includes("open")).join(" + ") +
+          "\nR_eq = " + fmt(calc.Req, "ohm", 2);
+      }
+
+      els.req.textContent =
+        "Equivalent resistance\n" +
+        "1/R_eq = 1/R1 + 1/R2 + 1/R3, using only closed branches. R is never below 1 ohm\n" +
+        reqLine;
+
+      els.battery.textContent =
+        "Battery with internal resistance\n" +
+        "E = " + fmt(calc.E, "V", 1) + "\n" +
+        "r = " + fmt(calc.rInternal, "ohm", 1) + "\n" +
+        "I_total = E / (r + R_eq) = " + fmt(calc.Itotal, "A", 2) + "\n" +
+        "V_terminal = E - I_total*r = " + fmt(calc.Vterminal, "V", 2);
+
+      let branchLines = "Branch current and voltage\n";
+      for (let i = 0; i < 3; i++) {
+        const status = calc.closed[i] ? "closed" : "open";
+        const shortText = calc.closed[i] && calc.R[i] <= 0.00001 ? ", short" : "";
+        branchLines +=
+          "Branch " + (i + 1) + " (" + status + shortText + "): " +
+          "V = " + fmt(calc.closed[i] ? calc.Vterminal : 0, "V", 2) +
+          ", I = " + fmt(calc.currents[i], "A", 2) + "\n";
+      }
+      els.branches.textContent = branchLines.trim();
+
+      let powerLines = "Power totals\n";
+      powerLines += "P_battery = E*I_total = " + fmt(calc.Pbattery, "W", 2) + "\n";
+      powerLines += "P_internal = I_total^2*r = " + fmt(calc.Pinternal, "W", 2) + "\n";
+      for (let i = 0; i < 3; i++) {
+        powerLines +=
+          "P" + (i + 1) + " = V_terminal*I" + (i + 1) +
+          " = " + fmt(calc.powers[i], "W", 2) + "\n";
+      }
+      powerLines += "P_load,total = " + fmt(calc.PloadTotal, "W", 2);
+      els.power.textContent = powerLines;
+    }
+
+    function drawWire(x1, y1, x2, y2, width = 5) {
+      ctx.strokeStyle = "#20242c";
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    function drawText(text, x, y, options = {}) {
+      ctx.save();
+      ctx.fillStyle = options.color || "#151922";
+      ctx.font = options.font || "14px Arial";
+      ctx.textAlign = options.align || "left";
+      ctx.textBaseline = options.baseline || "alphabetic";
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    function drawBattery(x, y, E, rInternal, Vterminal) {
+      drawWire(x, y - 75, x, y - 28);
+      drawWire(x, y + 28, x, y + 75);
+
+      ctx.strokeStyle = "#151922";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x - 28, y - 28);
+      ctx.lineTo(x + 28, y - 28);
+      ctx.moveTo(x - 16, y + 28);
+      ctx.lineTo(x + 16, y + 28);
+      ctx.stroke();
+
+      drawText("+", x + 36, y - 22, {font: "bold 18px Arial"});
+      drawText("-", x + 36, y + 34, {font: "bold 18px Arial"});
+      drawText("EMF E = " + fmt(E, "V", 1), x - 64, y - 96, {font: "bold 15px Arial"});
+      drawText("terminal V = " + fmt(Vterminal, "V", 2), x - 84, y + 105, {font: "bold 15px Arial", color: "#2b67f6"});
+      drawText("internal r = " + fmt(rInternal, "ohm", 1), x - 72, y + 126, {font: "13px Arial", color: "#5c6575"});
+    }
+
+    function drawSwitch(x, y, closed) {
+      ctx.save();
+      ctx.strokeStyle = closed ? "#168a42" : "#d93025";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+
+      // Short leads so the switch clearly connects to the wire on both sides.
+      ctx.beginPath();
+      ctx.moveTo(x - 28, y);
+      ctx.lineTo(x - 20, y);
+      ctx.moveTo(x + 20, y);
+      ctx.lineTo(x + 28, y);
+      ctx.stroke();
+
+      // Switch contact points
+      ctx.beginPath();
+      ctx.arc(x - 16, y, 4, 0, Math.PI * 2);
+      ctx.arc(x + 16, y, 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Switch bar
+      ctx.beginPath();
+      ctx.moveTo(x - 16, y);
+      if (closed) ctx.lineTo(x + 16, y);
+      else ctx.lineTo(x + 10, y - 20);
+      ctx.stroke();
+
+      drawText(closed ? "closed" : "open", x - 23, y - 29, {
+        font: "bold 12px Arial",
+        color: closed ? "#168a42" : "#d93025"
+      });
+      ctx.restore();
+    }
+
+    function drawResistor(x, y, label, R, voltage, isShort) {
+      ctx.save();
+
+      // These terminals match the branch wires in drawCircuit().
+      // This keeps the resistor smoothly connected instead of looking offset.
+      const leftTerminal = x - 60;
+      const rightTerminal = x + 60;
+      const zigLeft = x - 42;
+      const zigRight = x + 42;
+      const segments = 6;
+      const segW = (zigRight - zigLeft) / segments;
+
+      if (isShort) {
+        ctx.strokeStyle = "#d93025";
+        ctx.lineWidth = 7;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(leftTerminal, y);
+        ctx.lineTo(rightTerminal, y);
+        ctx.stroke();
+
+        const pulse = 0.45 + 0.35 * Math.sin(phase * 0.25);
+        ctx.strokeStyle = "rgba(217, 48, 37, " + pulse + ")";
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.moveTo(leftTerminal - 4, y);
+        ctx.lineTo(rightTerminal + 4, y);
+        ctx.stroke();
+
+        drawText(label + " = 0 ohm SHORT", x - 63, y - 18, {font: "bold 13px Arial", color: "#d93025"});
+      } else {
+        ctx.strokeStyle = "#151922";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.beginPath();
+
+        // Left straight lead
+        ctx.moveTo(leftTerminal, y);
+        ctx.lineTo(zigLeft, y);
+
+        // Centered zig-zag resistor
+        for (let k = 0; k < segments; k++) {
+          const px = zigLeft + k * segW;
+          ctx.lineTo(px + segW / 2, y + (k % 2 === 0 ? -15 : 15));
+          ctx.lineTo(px + segW, y);
+        }
+
+        // Right straight lead
+        ctx.lineTo(rightTerminal, y);
+        ctx.stroke();
+
+        drawText(label + " = " + fmt(R, "ohm", 1), x - 44, y - 22, {font: "bold 13px Arial"});
+      }
+
+      drawText("V across " + label + " = " + fmt(voltage, "V", 2), x - 72, y + 33, {
+        font: "13px Arial",
+        color: "#2b67f6"
+      });
+
+      ctx.restore();
+    }
+
+    function drawElectronOnPath(points, t, speed, active, intensity = 1) {
+      if (!active) return;
+
+      const totalSegments = [];
+      let totalLen = 0;
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i], b = points[i + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        totalSegments.push({a, b, len});
+        totalLen += len;
+      }
+
+      let d = ((t * speed) % totalLen + totalLen) % totalLen;
+      for (const seg of totalSegments) {
+        if (d <= seg.len) {
+          const u = d / seg.len;
+          const x = seg.a.x + (seg.b.x - seg.a.x) * u;
+          const y = seg.a.y + (seg.b.y - seg.a.y) * u;
+
+          ctx.save();
+          ctx.fillStyle = intensity > 1.5 ? "#d93025" : "#2b67f6";
+          ctx.beginPath();
+          ctx.arc(x, y, 4 + Math.min(intensity, 3), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          return;
+        }
+        d -= seg.len;
+      }
+    }
+
+    function drawPowerBox(x, y, w, h, label, power, maxPower, color, extraLabel = "") {
+      ctx.save();
+
+      ctx.strokeStyle = "#151922";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+
+      let frac = 0;
+      if (power === Infinity) frac = 1;
+      else if (maxPower > 0) frac = Math.min(power / maxPower, 1);
+
+      const fillH = h * frac;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y + h - fillH, w, fillH);
+
+      ctx.fillStyle = "#151922";
+      ctx.font = "bold 13px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(label, x + w / 2, y - 8);
+
+      ctx.font = "12px Arial";
+      ctx.fillText(fmt(power, "W", 2), x + w / 2, y + h + 17);
+      if (extraLabel) {
+        ctx.fillStyle = "#5c6575";
+        ctx.fillText(extraLabel, x + w / 2, y + h + 34);
+      }
+
+      ctx.restore();
+    }
+
+    function drawCircuit(calc) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawText("Circuit view", 28, 34, {font: "bold 18px Arial"});
+      drawText("Switches open/close each branch. Every closed branch includes a resistor, so there is no direct short path.", 28, 56, {
+        font: "14px Arial",
+        color: "#5c6575"
+      });
+
+      const leftX = 115;
+      const topY = 115;
+      const botY = 365;
+      const leftBusX = 250;
+      const rightBusX = 525;
+      const branchYs = [155, 240, 325];
+
+      drawBattery(leftX, (topY + botY) / 2, calc.E, calc.rInternal, calc.Vterminal);
+
+      // Corrected circuit layout:
+      // Positive terminal connects only to the left branch bus.
+      // Negative terminal connects only to the right return bus.
+      // There is no full wire loop around the resistors.
+      drawWire(leftX, topY, leftBusX, topY);
+      drawWire(leftX, topY, leftX, 165);
+      drawWire(leftBusX, topY, leftBusX, branchYs[2]);
+
+      drawWire(rightBusX, branchYs[0], rightBusX, botY);
+      drawWire(leftX, botY, rightBusX, botY);
+      drawWire(leftX, 315, leftX, botY);
+
+      drawText("+ node", leftBusX - 25, topY - 14, {font: "bold 13px Arial", color: "#168a42"});
+      drawText("- return", rightBusX - 35, botY + 24, {font: "bold 13px Arial", color: "#d93025"});
+
+      for (let i = 0; i < 3; i++) {
+        const y = branchYs[i];
+
+        drawWire(leftBusX, y, 300, y);
+
+        drawSwitch(328, y, calc.closed[i]);
+
+        if (calc.closed[i]) drawWire(348, y, 370, y);
+        else {
+          drawWire(348, y, 364, y);
+        }
+
+        const isShort = calc.closed[i] && calc.R[i] <= 0.00001;
+        drawResistor(430, y, "R" + (i + 1), calc.R[i], calc.closed[i] ? calc.Vterminal : 0, isShort);
+
+        drawWire(490, y, rightBusX, y);
+
+        const currentLabel = calc.currents[i] === Infinity ? "infinity A" : fmt(calc.currents[i], "A", 2);
+        drawText("I" + (i + 1) + " = " + currentLabel, 535, y + 5, {
+          font: "bold 13px Arial",
+          color: isShort ? "#d93025" : "#151922"
+        });
+
+        const active = calc.closed[i] && (calc.currents[i] > 0 || calc.currents[i] === Infinity);
+        const visualI = calc.currents[i] === Infinity ? 8 : Math.min(Math.abs(calc.currents[i]), 8);
+        const speed = 1.0 + visualI * 0.35;
+        const dots = calc.currents[i] === Infinity ? 8 : Math.max(2, Math.ceil(visualI + 1));
+        const path = [
+          {x: leftX, y: topY},
+          {x: leftBusX, y: topY},
+          {x: leftBusX, y},
+          {x: 300, y},
+          {x: rightBusX, y},
+          {x: rightBusX, y: botY},
+          {x: leftX, y: botY},
+          {x: leftX, y: topY}
+        ];
+        for (let d = 0; d < dots; d++) {
+          drawElectronOnPath(path, phase * 4 + d * 95, speed, active, visualI);
+        }
+      }
+
+      if (calc.zeroBranches.length > 0) {
+        const pulse = 0.55 + 0.35 * Math.sin(phase * 0.2);
+        ctx.save();
+        ctx.fillStyle = "rgba(217, 48, 37, " + pulse + ")";
+        ctx.font = "bold 22px Arial";
+        ctx.fillText("SHORT CIRCUIT", 300, 410);
+        ctx.font = "14px Arial";
+        ctx.fillText("Terminal voltage collapses to 0 V, so normal branches lose power.", 300, 434);
+        ctx.restore();
+      }
+
+      drawText("Power boxes", 635, 34, {font: "bold 18px Arial"});
+      drawText("Box area is proportional to power. Branch boxes stay the same when another ideal branch is opened/closed unless internal resistance changes terminal voltage.", 635, 56, {
+        font: "14px Arial",
+        color: "#5c6575"
+      });
+
+      const finitePowers = [
+        calc.Pbattery,
+        calc.Pinternal,
+        calc.PloadTotal,
+        ...calc.powers
+      ].filter(p => p !== Infinity && !Number.isNaN(p));
+      const maxPower = calc.idealShort ? 1 : Math.max(1, ...finitePowers);
+
+      drawPowerBox(650, 105, 95, 180, "Battery input", calc.Pbattery, maxPower, "#151922", "E*I");
+      drawPowerBox(770, 105, 95, 180, "Internal r", calc.Pinternal, maxPower, "#f59f00", "I^2*r");
+      drawPowerBox(890, 105, 95, 180, "Load total", calc.PloadTotal, maxPower, "#2b67f6", "sum P");
+
+      for (let i = 0; i < 3; i++) {
+        const y = 365;
+        drawPowerBox(650 + i * 120, y, 95, 170, "Branch " + (i + 1), calc.powers[i], maxPower, "#26a269", "V*I" + (i + 1));
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "#151922";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(650, 552);
+      ctx.lineTo(985, 552);
+      ctx.stroke();
+      ctx.restore();
+
+      drawText("Total current I = " + fmt(calc.Itotal, "A", 2), 30, 515, {font: "bold 16px Arial"});
+      drawText("Equivalent resistance R_eq = " + fmt(calc.Req, "ohm", 2), 30, 540, {font: "bold 16px Arial"});
+      drawText("Terminal voltage V_terminal = " + fmt(calc.Vterminal, "V", 2), 30, 565, {font: "bold 16px Arial", color: "#2b67f6"});
+      drawText("Safe model: minimum branch resistance = 1 ohm, so no branch is a wire-only short.", 30, 590, {font: "bold 14px Arial", color: "#168a42"});
+
+      if (calc.rInternal > 0 && calc.zeroBranches.length === 0 && !calc.allOpen) {
+        drawText("Try increasing r, then close another branch: V_terminal drops, so all existing branch power boxes shrink.", 30, 625, {
+          font: "bold 14px Arial",
+          color: "#5c6575"
+        });
+      }
+    }
+
+    function update() {
+      const calc = calculate();
+      updateText(calc);
+      drawCircuit(calc);
+    }
+
+    function animate() {
+      phase += 1;
+      update();
+      requestAnimationFrame(animate);
+    }
+
+    els.emf.addEventListener("input", update);
+    els.internalR.addEventListener("input", update);
+
+    for (let i = 0; i < 3; i++) {
+      els.r[i].addEventListener("input", update);
+      els.closed[i].addEventListener("change", update);
+
+      document.getElementById("short" + i).addEventListener("click", () => {
+        els.r[i].value = 1;
+        els.closed[i].checked = true;
+        update();
+      });
+
+      document.getElementById("normal" + i).addEventListener("click", () => {
+        els.r[i].value = resetR[i];
+        update();
+      });
+    }
+
+    document.getElementById("allClosed").addEventListener("click", () => {
+      for (const c of els.closed) c.checked = true;
+      update();
+    });
+
+    document.getElementById("allOpen").addEventListener("click", () => {
+      for (const c of els.closed) c.checked = false;
+      update();
+    });
+
+    update();
+    animate();
+  </script>
+</body>
+</html>
