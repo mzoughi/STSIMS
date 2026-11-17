@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RC Circuit Simulation</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; margin: 0; padding: 20px; }
+        .sidebar { width: 300px; padding: 20px; background-color: #f4f4f9; border-radius: 8px; }
+        .main { margin-left: 20px; }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; }
+        canvas { background-color: #fff; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin-right: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Circuit Parameters</h2>
+    
+    <div class="control-group">
+        <label>Resistance: <span id="rVal">100</span> Ω</label>
+        <input type="range" id="res" min="10" max="1000" value="100">
+    </div>
+
+    <div class="control-group">
+        <label>Capacitance: <span id="cVal">0.010</span> F</label>
+        <input type="range" id="cap" min="1" max="100" value="10">
+    </div>
+
+    <div class="control-group">
+        <label>Battery Voltage: <span id="vVal">9.0</span> V</label>
+        <input type="range" id="volt" min="10" max="240" value="90">
+    </div>
+
+    <div class="control-group">
+        <label>Circuit State</label>
+        <select id="mode">
+            <option value="charging" selected="selected">Charging</option>
+            <option value="discharging">Discharging</option>
+        </select>
+    </div>
+
+    <div class="control-group">
+        <strong>Time Constant (τ): </strong><span id="tauVal">1.000</span> s
+    </div>
+
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+</div>
+
+<div class="main">
+    <!-- Increased width to fit the axis numbers -->
+    <canvas id="plot" width="700" height="400"></canvas>
+    <div style="margin-top: 10px; text-align: center;">
+        <span style="color: blue; font-weight: bold;">— Voltage (V)</span> &nbsp;&nbsp;&nbsp;
+        <span style="color: red; font-weight: bold;">— Current (A)</span>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('plot');
+    const ctx = canvas.getContext('2d');
+    let animationId;
+    let time = 0;
+    let timeData = [], voltData = [], currData = [];
+    
+    // Inputs
+    const resSlider = document.getElementById('res');
+    const capSlider = document.getElementById('cap');
+    const voltSlider = document.getElementById('volt');
+    const modeSelect = document.getElementById('mode');
+    
+    let R = parseInt(resSlider.value);
+    let C = parseInt(capSlider.value) / 1000;
+    let V = parseInt(voltSlider.value) / 10;
+    let tau = R * C;
+    let isCharging = modeSelect.value === 'charging';
+    let maxTime = Math.max(5 * tau, 0.1);
+    let isRunning = false;
+
+    function updateLabels() {
+        document.getElementById('rVal').innerText = R;
+        document.getElementById('cVal').innerText = C.toFixed(3);
+        document.getElementById('vVal').innerText = V.toFixed(1);
+        document.getElementById('tauVal').innerText = tau.toFixed(3);
+    }
+
+    function resetSim() {
+        cancelAnimationFrame(animationId);
+        time = 0;
+        timeData = []; voltData = []; currData = [];
+        isRunning = false;
+        drawGraph();
+    }
+
+    function updateParams() {
+        R = parseInt(resSlider.value);
+        C = parseInt(capSlider.value) / 1000;
+        V = parseInt(voltSlider.value) / 10;
+        tau = R * C;
+        isCharging = modeSelect.value === 'charging';
+        maxTime = Math.max(5 * tau, 0.1);
+        updateLabels();
+        resetSim();
+    }
+
+    [resSlider, capSlider, voltSlider, modeSelect].forEach(el => {
+        el.addEventListener('input', updateParams);
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+        if (!isRunning) {
+            resetSim();
+            isRunning = true;
+            stepSim();
+        }
+    });
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+        isRunning = false;
+    });
+
+    function stepSim() {
+        if (!isRunning || time > maxTime) return;
+
+        let v_curr, i_curr;
+        if (isCharging) {
+            v_curr = V * (1 - Math.exp(-time / tau));
+            i_curr = (V / R) * Math.exp(-time / tau);
+        } else {
+            v_curr = V * Math.exp(-time / tau);
+            i_curr = -(V / R) * Math.exp(-time / tau);
+        }
+
+        timeData.push(time);
+        voltData.push(v_curr);
+        currData.push(i_curr);
+
+        drawGraph();
+        time += maxTime / 100;
+
+        setTimeout(() => {
+            if (isRunning) animationId = requestAnimationFrame(stepSim);
+        }, (maxTime * 1000) / 100);
+    }
+
+    function drawGraph() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Extra padding so numbers fit on the screen
+        let pad = 60; 
+        let w = canvas.width - pad * 2;
+        let h = canvas.height - pad * 2;
+        
+        // Draw the black box for the axes
+        ctx.beginPath();
+        ctx.moveTo(pad, pad); // Top left
+        ctx.lineTo(pad, canvas.height - pad); // Bottom left (Voltage axis)
+        ctx.lineTo(canvas.width - pad, canvas.height - pad); // Bottom right (Time axis)
+        ctx.moveTo(canvas.width - pad, pad); // Top right
+        ctx.lineTo(canvas.width - pad, canvas.height - pad); // Right side (Current axis)
+        ctx.strokeStyle = '#000'; 
+        ctx.stroke();
+
+        // Setup font for numbers
+        ctx.font = "12px Arial";
+        ctx.textBaseline = "middle";
+
+        // X-Axis Labels (Time)
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        for (let i = 0; i <= 5; i++) {
+            let tVal = (i / 5) * maxTime;
+            let x = pad + (i / 5) * w;
+            ctx.fillText(tVal.toFixed(2) + "s", x, canvas.height - pad + 20);
+            
+            // Draw a tiny tick mark
+            ctx.beginPath(); 
+            ctx.moveTo(x, canvas.height - pad); 
+            ctx.lineTo(x, canvas.height - pad + 5); 
+            ctx.stroke();
+        }
+
+        let maxI = V / R;
+
+        // Left Y-Axis Labels (Voltage)
+        ctx.textAlign = "right";
+        ctx.fillStyle = "blue";
+        for (let i = 0; i <= 5; i++) {
+            let vVal = (i / 5) * (V * 1.1);
+            let y = (canvas.height - pad) - (i / 5) * h;
+            ctx.fillText(vVal.toFixed(1), pad - 10, y);
+            
+            // Tick mark
+            ctx.beginPath(); 
+            ctx.moveTo(pad - 5, y); 
+            ctx.lineTo(pad, y); 
+            ctx.strokeStyle = '#000'; 
+            ctx.stroke();
+        }
+
+        // Right Y-Axis Labels (Current)
+        ctx.textAlign = "left";
+        ctx.fillStyle = "red";
+        let yCenter = canvas.height / 2;
+        for (let i = -2; i <= 2; i++) {
+            let iVal = (i / 2) * (maxI * 1.1);
+            let y = yCenter - (i / 2) * (h / 2);
+            ctx.fillText(iVal.toFixed(3), canvas.width - pad + 10, y);
+            
+            // Tick mark
+            ctx.beginPath(); 
+            ctx.moveTo(canvas.width - pad, y); 
+            ctx.lineTo(canvas.width - pad + 5, y); 
+            ctx.strokeStyle = '#000'; 
+            ctx.stroke();
+        }
+
+        if (timeData.length === 0) return;
+
+        // Draw Voltage Curve (Blue)
+        ctx.beginPath();
+        ctx.strokeStyle = 'blue';
+        for (let i = 0; i < timeData.length; i++) {
+            let x = pad + (timeData[i] / maxTime) * w;
+            let y = (canvas.height - pad) - (voltData[i] / (V * 1.1)) * h;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Draw Current Curve (Red)
+        ctx.beginPath();
+        ctx.strokeStyle = 'red';
+        for (let i = 0; i < timeData.length; i++) {
+            let x = pad + (timeData[i] / maxTime) * w;
+            let y = yCenter - (currData[i] / (maxI * 1.1)) * (h / 2);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    updateParams();
+</script>
+
+
+</body></html>
