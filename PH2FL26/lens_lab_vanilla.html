@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lens Lab</title>
+<meta name="description" content="A hands-on optics bench for exploring how lens shape and refractive index focus parallel light." />
+<style>
+/* Optional web fonts: the page falls back to system fonts if offline. */
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+/* ---------- Base / reset (replaces the Tailwind preflight) ---------- */
+:root{
+  --app-font-sans:"DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --app-font-serif:"Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --app-font-mono:"DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ink:#202a36; --muted-ink:#68717b; --paper:#f5f1e7;
+  --teal:#11846d; --coral:#ef7655; --gold:#f4c856; --bench:#172b35;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid}
+html{-webkit-text-size-adjust:100%;line-height:1.5;font-family:var(--app-font-sans);background:#f5f1e7;min-width:320px}
+body{color:#202a36;min-height:100dvh;font-family:var(--app-font-sans);-webkit-font-smoothing:antialiased;background:#f5f1e7;margin:0}
+h1,h2,h3{font-size:inherit;font-weight:inherit}
+ol,ul{list-style:none}
+svg,canvas{display:block;vertical-align:middle}
+button,input{font:inherit;letter-spacing:inherit;color:inherit;background-color:transparent;border-radius:0}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline-offset:3px;outline:3px solid #ef7655}
+sub{vertical-align:baseline;font-size:75%;line-height:0;position:relative;bottom:-.25em}
+
+/* ---------- App styles ---------- */
+.app-shell{max-width:1440px;margin:0 auto;padding:28px clamp(18px,4vw,58px) 44px}
+.topbar{border-bottom:1px solid #d9d2c5;justify-content:space-between;align-items:center;padding-bottom:26px;display:flex}
+.brand{font:700 16px var(--app-font-serif);letter-spacing:-.04em;align-items:center;gap:12px;display:flex}
+.brand-mark{background:var(--ink);width:34px;height:34px;color:var(--gold);border-radius:10px;place-items:center;display:grid}
+.brand-mark svg{width:19px;height:19px}
+.top-meta{color:#6a747b;font:500 11px var(--app-font-mono);letter-spacing:.09em;text-transform:uppercase;align-items:center;gap:9px;display:flex}
+.live-dot{background:#22a17f;border-radius:50%;width:7px;height:7px;box-shadow:0 0 0 4px #22a17f1a}
+.intro{justify-content:space-between;align-items:flex-end;gap:22px;padding:31px 0 22px;display:flex}
+.eyebrow{color:var(--teal);font:500 10px var(--app-font-mono);letter-spacing:.13em;text-transform:uppercase}
+.intro h1{font:600 clamp(30px,4.3vw,49px)/1.04 var(--app-font-serif);letter-spacing:-.06em;margin:8px 0 0}
+.intro p{color:#68717b;max-width:310px;margin:0 0 2px;font-size:13px;line-height:1.6}
+.bench{background:var(--bench);border-radius:16px;overflow:hidden;box-shadow:0 20px 42px #1d30361c}
+.bench-head{color:#c8d3d0;justify-content:space-between;align-items:center;padding:16px 20px;display:flex}
+.bench-label{font:500 10px var(--app-font-mono);letter-spacing:.12em;text-transform:uppercase;align-items:center;gap:10px;display:flex}
+.bench-label span:first-child{color:var(--gold)}
+.bench-hint{color:#829497;font:10px var(--app-font-mono)}
+.source-mode-bar{color:#d0ddda;grid-template-columns:minmax(0,1.2fr) minmax(210px,.8fr);align-items:center;gap:16px;padding:0 20px 14px;display:grid}
+.source-mode-heading{color:#91aaa8;font:9px var(--app-font-mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.source-mode-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;display:grid}
+.source-mode-button{color:#c2d2d0;cursor:pointer;text-align:center;background:#172a34;border:1px solid #3b535c;border-radius:8px;justify-content:center;align-items:center;gap:7px;min-width:0;min-height:40px;padding:7px 9px;font-size:10px;font-weight:600;transition:background .16s,border-color .16s,color .16s;display:flex}
+.source-mode-button:hover{background:#1a333b;border-color:#6b9e99}
+.source-mode-button[aria-pressed=true]{color:#8ce6e3;background:#173c43;border-color:#3cbac0;box-shadow:inset 0 0 0 1px #3cbac044}
+.source-glyph{fill:none;stroke:currentColor;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round;flex:none;width:20px;height:18px}
+.source-mode-description{color:#a9bfbd;background:#142630;border:1px solid #2c434c;border-radius:8px;margin:0;padding:11px 13px;font-size:11px;line-height:1.55}
+.diagram{background:#213942;width:100%;height:auto;min-height:300px;display:block}
+.ray{stroke:#f4c856;stroke-width:2.1px;opacity:.92}
+.ray-core{stroke:#fff0b7;stroke-width:2.4px;opacity:.96}
+.ray-virtual{stroke:#ef9277;stroke-width:1.25px;stroke-dasharray:5 7;opacity:.7}
+.wavefront{fill:none;stroke:#72d4d3;stroke-width:1.1px;stroke-dasharray:3 6;opacity:.37}
+.source-point{fill:#62dbe0;stroke:#e0ffff;stroke-width:2px;cursor:grab;touch-action:none}
+.diagram.is-dragging .source-point{cursor:grabbing}
+.object-arrow,.image-arrow{stroke:#8be0c9;stroke-width:2px}
+.object-arrow-head,.image-arrow-head{fill:none;stroke:#8be0c9;stroke-width:2px;stroke-linecap:round;stroke-linejoin:round}
+.image-arrow.virtual,.image-arrow-head.virtual{stroke:#ef9277;stroke-dasharray:5 5;opacity:.8}
+.axis{stroke:#8aa09d;stroke-width:1px;stroke-dasharray:4 8;opacity:.4}
+.lens-glass{fill:#69c9b1;fill-opacity:.23;stroke:#82ddc7;stroke-width:2.1px}
+.lens-highlight{stroke:#d0fff1;stroke-width:1.2px;opacity:.65}
+.tick-line{stroke:#49616a;stroke-width:1px}
+.focus-dot{fill:#ef7655;stroke:#ffe1d2;stroke-width:2px}
+.diagram-caption{fill:#b7c6c4;letter-spacing:.04em;font:10px "DM Mono",monospace}
+.lens-stamp{fill:#d2e2dd;letter-spacing:.12em;font:9px "DM Mono",monospace}
+.readouts{background:#20353e;border-top:1px solid #354b53;grid-template-columns:1.05fr 1fr 1fr;display:grid}
+.readout{min-width:0;padding:17px 20px 19px}
+.readout+.readout{border-left:1px solid #3b5057}
+.readout-label{color:#98aaa8;font:10px var(--app-font-mono);letter-spacing:.1em;text-transform:uppercase}
+.readout-value{color:#f3f0e5;font:600 clamp(22px,3vw,30px)/1 var(--app-font-serif);letter-spacing:-.05em;align-items:baseline;gap:7px;margin-top:7px;display:flex}
+.readout-value small{color:#aebbb8;font:11px var(--app-font-mono);letter-spacing:0}
+.readout-note{color:#9aadaa;margin-top:7px;font-size:11px}
+.status-pill{color:#bce6d6;font:10px var(--app-font-mono);border:1px solid #56746f;border-radius:20px;align-items:center;gap:6px;margin-top:10px;padding:5px 8px;display:inline-flex}
+.controls-wrap{grid-template-columns:minmax(0,1fr) 280px;gap:18px;margin-top:18px;display:grid}
+.control-panel,.insight-panel{background:#fbf8f0;border:1px solid #ddd5c7;border-radius:14px}
+.control-panel{padding:20px 22px 22px}
+.panel-heading{justify-content:space-between;align-items:center;gap:12px;margin-bottom:19px;display:flex}
+.panel-heading h2{font:600 17px var(--app-font-serif);letter-spacing:-.035em;margin:0}
+.reset-button{color:#66717a;cursor:pointer;background:0 0;border:0;border-radius:7px;align-items:center;gap:7px;padding:7px 8px;font-size:11px;display:flex}
+.reset-button:hover{color:var(--ink);background:#eee9de}
+.reset-button svg{width:14px;height:14px}
+.lens-choices{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:21px;display:grid}
+.lens-choice{color:#4b555e;cursor:pointer;text-align:left;background:#f7f3e9;border:1px solid #ddd6c9;border-radius:9px;align-items:center;gap:9px;min-height:57px;padding:8px 10px;transition:background .16s,border-color .16s,transform .16s;display:flex}
+.lens-choice:hover{border-color:#9bbdb2;transform:translateY(-1px)}
+.lens-choice[aria-pressed=true]{border-color:var(--teal);color:#155847;background:#e9f3ed;box-shadow:inset 0 0 0 1px #11846d24}
+.lens-icon{flex:none;width:25px;height:34px}
+.lens-choice span{font-size:11px;font-weight:600;line-height:1.2}
+.source-geometry{background:#f5f0e5;border:1px solid #e0d8ca;border-radius:10px;margin:0 0 20px;padding:13px 14px 15px}
+.source-geometry[hidden]{display:none}
+.source-geometry-heading{justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;display:flex}
+.source-geometry-heading strong{color:#344d4e;font-size:11px;font-weight:700}
+.source-geometry-heading span{color:#818987;font:9px var(--app-font-mono)}
+.source-geometry-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;display:grid}
+.slider-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px 26px;display:grid}
+.slider-control{min-width:0}
+.slider-control[hidden]{display:none}
+.control-note{color:#818987;margin:0 0 8px;font-size:9px;line-height:1.4}
+.slider-topline{justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:9px;display:flex}
+.slider-topline label{color:#4d5861;font-size:12px;font-weight:600}
+.slider-value{color:var(--ink);font:500 12px var(--app-font-mono);white-space:nowrap}
+.slider-value small{color:#7c858a;font-size:10px}
+.medium-preset-area{margin:0 0 9px}
+.medium-preset-heading{color:#7b8586;font:9px var(--app-font-mono);letter-spacing:.04em;text-transform:uppercase;justify-content:space-between;gap:8px;margin-bottom:6px;display:flex}
+.medium-preset-heading span:last-child{color:#23745f}
+.medium-presets{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;display:grid}
+.medium-preset{color:#4b555e;cursor:pointer;text-align:left;background:#f7f3e9;border:1px solid #ddd6c9;border-radius:7px;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:6px 8px;transition:background .16s,border-color .16s,transform .16s;display:flex}
+.medium-preset:hover{border-color:#9bbdb2;transform:translateY(-1px)}
+.medium-preset[aria-pressed=true]{border-color:var(--teal);color:#155847;background:#e9f3ed;box-shadow:inset 0 0 0 1px #11846d24}
+.medium-preset:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.medium-preset span{font-size:10px;font-weight:600;line-height:1.1}
+.medium-preset small{color:#7c858a;font:9px var(--app-font-mono);white-space:nowrap}
+.medium-insight{color:#778080;margin:6px 0 0;font-size:9px;line-height:1.4}
+.range-wrap{align-items:center;gap:10px;display:flex}
+.range-edge{color:#98a09f;font:9px var(--app-font-mono)}
+input[type=range]{--range-progress:50%;-webkit-appearance:none;appearance:none;background:linear-gradient(to right,var(--teal) 0 var(--range-progress),#d8d3c8 var(--range-progress) 100%);cursor:pointer;border-radius:4px;width:100%;height:4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;background:var(--teal);width:15px;height:15px;box-shadow:0 0 0 1px var(--teal);border:3px solid #fbf8f0;border-radius:50%}
+input[type=range]::-moz-range-thumb{background:var(--teal);width:10px;height:10px;box-shadow:0 0 0 1px var(--teal);border:3px solid #fbf8f0;border-radius:50%}
+.insight-panel{background:#eee9dc;flex-direction:column;padding:20px 20px 18px;display:flex}
+.insight-kicker{color:#9b563d;font:500 10px var(--app-font-mono);letter-spacing:.11em;text-transform:uppercase}
+.insight-panel h3{font:600 18px/1.2 var(--app-font-serif);letter-spacing:-.04em;margin:9px 0}
+.insight-panel p{color:#5e6669;margin:0;font-size:12px;line-height:1.6}
+.equation{color:#253a41;font:13px var(--app-font-mono);margin-top:auto;padding-top:17px}
+.equation em{color:var(--teal);font-style:normal}
+.footnote{color:#727a7b;padding:14px 2px 0;font-size:10px;line-height:1.6}
+.footnote strong{color:#4d5a5b;font-weight:600}
+.sr-only{clip:rect(0,0,0,0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}
+@media(max-width:780px){
+  .app-shell{padding:18px 16px 30px}
+  .topbar{padding-bottom:18px}
+  .intro{padding:25px 0 19px;display:block}
+  .intro p{max-width:460px;margin-top:11px}
+  .source-mode-bar{grid-template-columns:1fr;gap:9px}
+  .source-mode-description{padding:8px 11px}
+  .controls-wrap{grid-template-columns:1fr}
+  .insight-panel{min-height:180px}
+  .equation{margin-top:18px}
+}
+@media(max-width:560px){
+  .top-meta{gap:6px;font-size:9px}
+  .brand{font-size:14px}
+  .bench{border-radius:12px}
+  .bench-head{padding:13px}
+  .bench-hint{text-align:right;max-width:100px;line-height:1.4}
+  .diagram{min-height:220px}
+  .readout{padding:13px 11px 14px}
+  .readout-label{letter-spacing:.07em;font-size:8px}
+  .readout-value{font-size:22px}
+  .readout-value small,.readout-note{font-size:9px}
+  .source-mode-bar{padding:0 12px 12px}
+  .source-mode-options{gap:5px}
+  .source-mode-button{gap:4px;padding:6px 4px;font-size:9px}
+  .source-glyph{width:17px;height:16px}
+  .control-panel{padding:17px 14px}
+  .source-geometry{padding:12px 10px 14px}
+  .source-geometry-heading{flex-direction:column;align-items:flex-start;gap:4px}
+  .source-geometry-grid{grid-template-columns:1fr;gap:15px}
+  .lens-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:19px}
+  .lens-choice{min-height:53px}
+  .slider-grid{grid-template-columns:1fr;gap:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<main class="app-shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/>
+        </svg>
+      </div>
+      <span>lens lab</span>
+    </div>
+    <div class="top-meta"><span class="live-dot"></span><span>Optics bench / 01</span></div>
+  </header>
+
+  <section class="intro" aria-labelledby="page-title">
+    <div>
+      <div class="eyebrow">Light, shaped by glass</div>
+      <h1 id="page-title">Find the focus.</h1>
+    </div>
+    <p>Choose how light reaches the lens, then change one property at a time and trace what happens.</p>
+  </section>
+
+  <section class="bench" aria-label="Live ray-tracing experiment">
+    <div class="bench-head">
+      <div class="bench-label"><span>01</span><span>Live ray trace</span></div>
+      <div class="bench-hint">PARAXIAL MODEL &nbsp;·&nbsp; THIN LENS</div>
+    </div>
+
+    <div class="source-mode-bar">
+      <div class="source-mode-select">
+        <div class="source-mode-heading">Light source / experiment mode</div>
+        <div class="source-mode-options" id="sourceModeOptions" role="group" aria-label="Light source and experiment mode"></div>
+      </div>
+      <p class="source-mode-description" id="sourceDescription"></p>
+    </div>
+
+    <svg class="diagram" id="diagram" viewBox="0 0 1000 436" role="img" aria-labelledby="diagram-title diagram-desc">
+      <title id="diagram-title"></title>
+      <desc id="diagram-desc"></desc>
+      <defs>
+        <linearGradient id="glass" x1="0" x2="1">
+          <stop offset="0" stop-color="#38a88d" stop-opacity=".13"/>
+          <stop offset=".5" stop-color="#74dfc2" stop-opacity=".35"/>
+          <stop offset="1" stop-color="#38a88d" stop-opacity=".13"/>
+        </linearGradient>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0H0V40" fill="none" stroke="#b8d0c8" stroke-opacity=".055" stroke-width="1"/>
+        </pattern>
+        <clipPath id="diagram-clip"><rect x="26" y="30" width="948" height="354" rx="8"/></clipPath>
+      </defs>
+      <rect x="26" y="30" width="948" height="354" rx="8" fill="#1c323b" stroke="#415a60"/>
+      <rect x="26" y="30" width="948" height="354" rx="8" fill="url(#grid)"/>
+      <g id="scene" clip-path="url(#diagram-clip)"></g>
+      <text class="diagram-caption" id="modeLabel" x="43" y="20"></text>
+      <text class="diagram-caption" x="960" y="20" text-anchor="end">PROPAGATION →</text>
+    </svg>
+
+    <div class="readouts" aria-live="polite">
+      <div class="readout">
+        <div class="readout-label">Focal length</div>
+        <div class="readout-value"><span id="ro-focal"></span><small id="ro-focal-unit"></small></div>
+        <div class="readout-note" id="ro-focal-note"></div>
+      </div>
+      <div class="readout">
+        <div class="readout-label">Lens behaviour</div>
+        <div class="readout-value" id="ro-behaviour"></div>
+        <div class="status-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/>
+          </svg>
+          <span id="ro-lens-title"></span>
+        </div>
+      </div>
+      <div class="readout">
+        <div class="readout-label" id="ro3-label"></div>
+        <div class="readout-value"><span id="ro3-value"></span><small id="ro3-unit"></small></div>
+        <div class="readout-note" id="ro3-note"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="controls-wrap" aria-label="Lens controls and physics">
+    <div class="control-panel">
+      <div class="panel-heading">
+        <h2>Set up the lens</h2>
+        <button class="reset-button" type="button" id="resetBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+          Reset experiment
+        </button>
+      </div>
+
+      <div class="source-geometry" id="sourceGeometry" hidden>
+        <div class="source-geometry-heading">
+          <strong id="geomTitle"></strong>
+          <span>Positive height is above the axis &nbsp;·&nbsp; 1/f = 1/d<sub>o</sub> + 1/d<sub>i</sub></span>
+        </div>
+        <div class="source-geometry-grid" id="geomGrid"></div>
+      </div>
+
+      <div class="lens-choices" id="lensChoices" role="group" aria-label="Lens shape"></div>
+      <div class="slider-grid" id="sliderGrid"></div>
+    </div>
+
+    <aside class="insight-panel">
+      <div class="insight-kicker" id="insightKicker"></div>
+      <h3 id="insightTitle"></h3>
+      <p id="insightText"></p>
+      <div class="equation" id="equation"></div>
+    </aside>
+  </section>
+
+  <footer class="footnote">
+    <strong>Model limits</strong> &nbsp;—&nbsp; The simulation uses the ideal thin-lens, paraxial approximation; it does not model thickness, wavelength, energy loss, or spherical aberration. The opening is limited to 2R for a possible spherical surface. Image distance uses the sign convention: positive is a real image after the lens, negative is a virtual image before it. At n<sub>rel</sub> = 1, the lens has no refractive power.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= Data ================= */
+  var DEFAULTS = {
+    kind: "biconvex", radius: 60, aperture: 120, lensIndex: 1.5, mediumIndex: 1,
+    sourceMode: "parallel", objectDistance: 180, sourceHeight: 0, objectHeight: 30
+  };
+  var MEDIA = [
+    { id: "vacuum", name: "Vacuum", index: 1 },
+    { id: "air",    name: "Air",    index: 1.0003 },
+    { id: "water",  name: "Water",  index: 1.333 }
+  ];
+  var MODES = [
+    { id: "parallel",     label: "Parallel beam" },
+    { id: "object-image", label: "Object & image" },
+    { id: "point",        label: "Point source" }
+  ];
+  var LENSES = [
+    { id: "biconvex",      title: "Biconvex",      short: "Both sides bulge", converging: true },
+    { id: "plano-convex",  title: "Plano-convex",  short: "One flat face",    converging: true },
+    { id: "biconcave",     title: "Biconcave",     short: "Both sides cave",  converging: false },
+    { id: "plano-concave", title: "Plano-concave", short: "One flat face",    converging: false }
+  ];
+  var LENS_ICON_PATHS = {
+    "biconvex": "M12 3 C3 10 3 24 12 31 C21 24 21 10 12 3Z",
+    "plano-convex": "M8 3 C2 10 2 24 8 31 L17 31 L17 3Z",
+    "biconcave": "M5 3 C15 10 15 24 5 31 L19 31 C9 24 9 10 19 3Z",
+    "plano-concave": "M5 3 L5 31 L18 31 C8 24 8 10 18 3Z"
+  };
+  var MODE_GLYPHS = {
+    "parallel": '<path d="M2 4h17M2 10h17M2 16h17"/><path d="m16 1 4 3-4 3M16 7l4 3-4 3M16 13l4 3-4 3"/>',
+    "point": '<circle cx="4" cy="10" r="2"/><path d="M7 10h15M7 10l11-7M7 10l11 7"/>',
+    "object-image": '<path d="M4 17V4m-3 3 3-3 3 3M11 10h11m-3-3 3 3-3 3"/>'
+  };
+  var MINUS = "\u2212";
+
+  var state = Object.assign({}, DEFAULTS);
+
+  /* ================= Helpers ================= */
+  function $(id) { return document.getElementById(id); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  // Signed number format used by the focal-length and image-distance readouts
+  function fmtSigned(x, digits) {
+    if (digits === undefined) digits = 2;
+    var sign = x >= 0 ? "+" : MINUS;
+    var a = Math.abs(x);
+    if (a >= 1e6) return sign + (a / 1e6).toFixed(2) + "M";
+    if (a >= 1e4) return sign + (a / 1e3).toFixed(1) + "k";
+    return sign + a.toFixed(digits);
+  }
+
+  /* ================= Physics ================= */
+  function compute(s) {
+    var rel = s.lensIndex / s.mediumIndex;                       // n_rel
+    var preset = null;
+    for (var i = 0; i < MEDIA.length; i++) {
+      if (Math.abs(MEDIA[i].index - s.mediumIndex) < 5e-5) { preset = MEDIA[i]; break; }
+    }
+    var noPower = Math.abs(rel - 1) < 1e-10;
+    var lens = LENSES.filter(function (l) { return l.id === s.kind; })[0];
+
+    var focal = null;                                            // thin-lens, lensmaker's equation
+    if (!noPower) {
+      var sgn = lens.converging ? 1 : -1;
+      var faces = s.kind.indexOf("bi") === 0 ? 2 : 1;
+      focal = sgn * s.radius / (faces * (rel - 1));
+    }
+
+    var hasSource = s.sourceMode !== "parallel";
+    var invDi = (hasSource && focal !== null) ? 1 / focal - 1 / s.objectDistance : null;
+    var atInfinity = invDi !== null && Math.abs(invDi) < 1e-8;
+    var imageDist = (invDi === null || atInfinity) ? null : 1 / invDi;
+
+    return { rel: rel, preset: preset, noPower: noPower, lens: lens, focal: focal,
+             hasSource: hasSource, atInfinity: atInfinity, imageDist: imageDist };
+  }
+
+  /* ================= Diagram ================= */
+  var diagram = $("diagram");
+  var scene = $("scene");
+  var dragging = false;
+  var geom = { P: 1, Rt: 1 };   // px/mm scales, refreshed on every render (used by dragging)
+
+  function lensPath(kind, v, Q, Bt) {
+    var R = 482, H = 498;
+    if (kind === "biconvex")
+      return "M " + R + " " + Q + " Q " + (490 - v) + " 218 " + R + " " + Bt + " L " + H + " " + Bt + " Q " + (490 + v) + " 218 " + H + " " + Q + " Z";
+    if (kind === "plano-convex")
+      return "M " + R + " " + Q + " L " + R + " " + Bt + " L " + H + " " + Bt + " Q " + (490 + v * 2) + " 218 " + H + " " + Q + " Z";
+    if (kind === "biconcave")
+      return "M 488 " + Q + " Q " + (490 + v) + " 218 488 " + Bt + " L 492 " + Bt + " Q " + (490 - v) + " 218 492 " + Q + " Z";
+    return "M " + R + " " + Q + " L " + R + " " + Bt + " L " + H + " " + Bt + " Q " + (490 - v * 2) + " 218 " + H + " " + Q + " Z";
+  }
+
+  function renderDiagram(s, d) {
+    var focal = d.focal, noPower = d.noPower, imageDist = d.imageDist;
+    var R = 482, H = 498;
+    var A = 27 + (s.aperture - 30) / 170 * 106;                        // half-height of lens in px
+    var v = Math.max(14, Math.min(44, 14 + (120 - s.radius) * 0.32)); // surface bulge in px
+    var Q = 218 - A, Bt = 218 + A;
+    var path = lensPath(s.kind, v, Q, Bt);
+
+    var K = Math.max(
+      Math.abs(focal === null ? 0 : focal),
+      s.sourceMode === "parallel" ? 0 : (s.sourceMode === "point" ? 300 : s.objectDistance),
+      s.sourceMode === "object-image" ? Math.abs(imageDist === null ? 0 : imageDist) : 0,
+      1);
+    var P = Math.min(3.15, 430 / K);                                   // px per mm (horizontal)
+    var Tt = focal === null ? null : focal * P;
+    var dt = Tt === null ? null : 490 + Tt;                            // focal point x
+    var rt = s.sourceMode === "parallel" ? 42 : 490 - s.objectDistance * P; // source x
+    var Rt = A / (s.aperture / 2);                                     // px per mm (vertical)
+    var tt = s.sourceMode === "point" ? s.sourceHeight : s.objectHeight;
+    var yt = 218 - tt * Rt;                                            // source y
+    var Ot = imageDist === null ? 0 : -(imageDist / s.objectDistance) * tt; // image height (mm)
+    var U = imageDist === null ? null : 490 + imageDist * P;           // image x
+    var et = 218 - Ot * Rt;                                            // image y
+
+    geom.P = P; geom.Rt = Rt;
+
+    var heights = [];
+    for (var i = 0; i < 7; i++) heights.push(-A + 2 * A * i / 6);
+    var focusVisible = s.sourceMode === "parallel" && dt !== null && dt > 35 && dt < 965;
+    var imageVisible = U !== null && U > 35 && U < 965 && et > 44 && et < 360;
+
+    var out = [];
+    out.push('<line class="axis" x1="38" y1="218" x2="967" y2="218"/>');
+
+    if (s.sourceMode === "point") {
+      [42, 82, 122, 162].forEach(function (r) {
+        out.push('<circle class="wavefront" cx="' + rt + '" cy="' + yt + '" r="' + r + '"/>');
+      });
+    }
+
+    // Real rays (before and after the thin lens)
+    heights.forEach(function (B) {
+      var r = 218 + B;
+      var core = Math.abs(B) < 1;
+      var cls = core ? "ray-core" : "ray";
+      var slopeIn = s.sourceMode === "parallel" ? 0 : (r - yt) / (490 - rt);
+      var slopeOut = (noPower || Tt === null) ? slopeIn : slopeIn - B / Tt;
+      var yEnd = r + slopeOut * (965 - H);
+      out.push('<line class="' + cls + '" x1="' + rt + '" y1="' + (s.sourceMode === "parallel" ? r : yt) + '" x2="' + R + '" y2="' + r + '"/>');
+      out.push('<line class="' + cls + '" x1="' + H + '" y1="' + r + '" x2="965" y2="' + yEnd + '"/>');
+    });
+
+    // Virtual extensions (diverging lens, parallel beam)
+    if (!noPower && s.sourceMode === "parallel" && Tt !== null && Tt < 0 && focusVisible) {
+      heights.filter(function (B) { return Math.abs(B) > 2; }).forEach(function (B) {
+        out.push('<line class="ray-virtual" x1="' + dt + '" y1="218" x2="' + H + '" y2="' + (218 + B) + '"/>');
+      });
+    }
+    // Virtual extensions to a virtual image
+    if (!noPower && imageDist !== null && imageDist < 0 && U !== null) {
+      heights.filter(function (B) { return Math.abs(B) > 2; }).forEach(function (B) {
+        out.push('<line class="ray-virtual" x1="' + U + '" y1="' + et + '" x2="' + H + '" y2="' + (218 + B) + '"/>');
+      });
+    }
+
+    out.push('<path class="lens-glass" d="' + path + '" fill="url(#glass)"/>');
+    out.push('<path class="lens-highlight" d="M 490 ' + (Q + 12) + ' L 490 ' + (Bt - 12) + '"/>');
+
+    if (s.sourceMode === "point") {
+      out.push('<circle class="source-point" cx="' + rt + '" cy="' + yt + '" r="6"/>');
+      out.push('<text class="diagram-caption" x="' + rt + '" y="' + (yt - 13) + '" text-anchor="middle">POINT SOURCE</text>');
+    }
+    if (s.sourceMode === "object-image") {
+      out.push('<line class="object-arrow" x1="' + rt + '" y1="218" x2="' + rt + '" y2="' + yt + '"/>');
+      out.push('<path class="object-arrow-head" d="M ' + (rt - 5) + ' ' + (yt + 7) + ' L ' + rt + ' ' + yt + ' L ' + (rt + 5) + ' ' + (yt + 7) + '"/>');
+      out.push('<text class="diagram-caption" x="' + rt + '" y="238" text-anchor="middle">OBJECT</text>');
+    }
+
+    out.push('<text class="lens-stamp" x="490" y="405" text-anchor="middle">LENS / ' + esc(s.kind.toUpperCase()) + '</text>');
+    out.push('<g><line class="tick-line" x1="42" y1="366" x2="965" y2="366"/><line class="tick-line" x1="490" y1="361" x2="490" y2="371"/>' +
+             '<text class="diagram-caption" x="490" y="380" text-anchor="middle">OPTICAL CENTRE</text></g>');
+
+    if (focusVisible && dt !== null) {
+      out.push('<g><circle class="focus-dot" cx="' + dt + '" cy="218" r="6"/>' +
+               '<line x1="' + dt + '" y1="229" x2="' + dt + '" y2="245" stroke="#ef9277" stroke-width="1"/>' +
+               '<text class="diagram-caption" x="' + dt + '" y="260" text-anchor="middle">' + (focal > 0 ? "REAL FOCUS" : "VIRTUAL FOCUS") + '</text></g>');
+    }
+
+    if (s.sourceMode !== "parallel" && imageVisible && U !== null) {
+      var g = "<g>";
+      if (s.sourceMode === "object-image") {
+        var real = imageDist > 0;
+        g += '<line class="' + (real ? "image-arrow" : "image-arrow virtual") + '" x1="' + U + '" y1="218" x2="' + U + '" y2="' + et + '"/>';
+        var head = et < 218
+          ? "M " + (U - 5) + " " + (et + 7) + " L " + U + " " + et + " L " + (U + 5) + " " + (et + 7)
+          : "M " + (U - 5) + " " + (et - 7) + " L " + U + " " + et + " L " + (U + 5) + " " + (et - 7);
+        g += '<path class="' + (real ? "image-arrow-head" : "image-arrow-head virtual") + '" d="' + head + '"/>';
+      }
+      g += '<circle class="focus-dot" cx="' + U + '" cy="' + et + '" r="5"/>';
+      g += '<text class="diagram-caption" x="' + U + '" y="' + (et < 218 ? et - 14 : et + 24) + '" text-anchor="middle">' + (imageDist > 0 ? "REAL IMAGE" : "VIRTUAL IMAGE") + '</text></g>';
+      out.push(g);
+    }
+
+    if (s.sourceMode !== "parallel" && imageDist !== null && !imageVisible) {
+      out.push('<text class="diagram-caption" x="950" y="' + (et < 218 ? 49 : 360) + '" text-anchor="end">IMAGE OUTSIDE VIEW</text>');
+    }
+    if (s.sourceMode !== "parallel" && d.atInfinity) {
+      out.push('<text class="diagram-caption" x="950" y="51" text-anchor="end">IMAGE AT INFINITY &#183; RAYS PARALLEL</text>');
+    }
+    if (s.sourceMode !== "parallel" && noPower) {
+      out.push('<text class="diagram-caption" x="950" y="51" text-anchor="end">NO IMAGE &#183; LENS HAS NO POWER</text>');
+    }
+    if (noPower) {
+      out.push('<g><rect x="680" y="48" width="244" height="34" rx="17" fill="#263f47" stroke="#68817f"/>' +
+               '<text class="diagram-caption" x="802" y="69" text-anchor="middle">NO FINITE FOCUS &#183; nREL = 1</text></g>');
+    }
+
+    scene.innerHTML = out.join("");
+
+    // Accessible title / description
+    var modeText = s.sourceMode === "parallel"
+      ? "Parallel light passes through the lens; the principal focal point is marked."
+      : s.sourceMode === "point"
+        ? "A nearby point sends diverging rays through the lens and forms an image point."
+        : "An object sends rays through the lens; its real or virtual image is shown.";
+    $("diagram-title").textContent = "Interactive " + s.sourceMode + " lens diagram";
+    $("diagram-desc").textContent = noPower
+      ? "Light passes through a " + s.kind + " lens with no finite focusing power."
+      : s.kind + " lens. " + modeText + (focal === null ? "" : " Lens focal length: " + Math.abs(focal).toFixed(2) + " millimeters.");
+
+    $("modeLabel").textContent =
+      s.sourceMode === "parallel" ? "PARALLEL INCIDENT RAYS" :
+      s.sourceMode === "point" ? "POINT SOURCE \u00B7 SPHERICAL WAVES" : "FINITE OBJECT \u00B7 IMAGE";
+  }
+
+  // Drag the point source (pointer events on the persistent <svg>)
+  diagram.addEventListener("pointerdown", function (e) {
+    if (e.target && e.target.classList && e.target.classList.contains("source-point")) {
+      e.preventDefault();
+      dragging = true;
+      diagram.classList.add("is-dragging");
+      try { diagram.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+  });
+  diagram.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var ctm = diagram.getScreenCTM();
+    if (!ctm) return;
+    var pt = diagram.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    var p = pt.matrixTransform(ctm.inverse());
+    var dist = clamp((490 - p.x) / geom.P, 40, 300);
+    var hgt = clamp((218 - p.y) / geom.Rt, -40, 40);
+    setState({ objectDistance: Math.round(dist), sourceHeight: Math.round(hgt) });
+  });
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    diagram.classList.remove("is-dragging");
+    try { diagram.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+  diagram.addEventListener("pointerup", endDrag);
+  diagram.addEventListener("pointercancel", endDrag);
+
+  /* ================= Controls (built once) ================= */
+  function makeSlider(cfg) {
+    var wrap = document.createElement("div");
+    wrap.className = "slider-control";
+    wrap.innerHTML =
+      '<div class="slider-topline"><label for="' + cfg.id + '"></label>' +
+      '<output class="slider-value" for="' + cfg.id + '"><span class="val"></span> <small></small></output></div>' +
+      '<div class="acc"></div>' +
+      '<div class="range-wrap"><span class="range-edge left" aria-hidden="true"></span>' +
+      '<input id="' + cfg.id + '" type="range"><span class="range-edge right" aria-hidden="true"></span></div>';
+    var input = wrap.querySelector("input");
+    var api = {
+      el: wrap,
+      input: input,
+      acc: wrap.querySelector(".acc"),
+      cfg: cfg,
+      update: function (o) {
+        // o: {label, value, min, max, leftLabel, rightLabel}
+        var c = Object.assign({}, cfg, o || {});
+        var prec = c.precision !== undefined ? c.precision : 0;
+        wrap.querySelector("label").textContent = c.label;
+        input.min = c.min; input.max = c.max; input.step = c.step;
+        input.value = c.value;
+        input.setAttribute("aria-label", c.label);
+        input.setAttribute("aria-valuetext", Number(c.value).toFixed(prec) + (c.unit ? " " + c.unit : ""));
+        input.style.setProperty("--range-progress", ((c.value - c.min) / (c.max - c.min) * 100) + "%");
+        wrap.querySelector(".val").textContent = Number(c.value).toFixed(prec);
+        wrap.querySelector("small").textContent = c.unit || "";
+        wrap.querySelector(".left").textContent = c.leftLabel;
+        wrap.querySelector(".right").textContent = c.rightLabel;
+      }
+    };
+    input.addEventListener("input", function () { cfg.onChange(Number(input.value)); });
+    return api;
+  }
+
+  // Constrained setter (aperture can never exceed 2R)
+  function setParam(key, val) {
+    var patch = {};
+    patch[key] = val;
+    if (key === "radius") patch.aperture = Math.min(state.aperture, Number(val) * 2);
+    if (key === "aperture") patch.aperture = Math.min(Number(val), state.radius * 2);
+    setState(patch);
+  }
+
+  var sObjDist = makeSlider({ id: "object-distance", min: 40, max: 300, step: 1, unit: "mm", precision: 0, onChange: function (v) { setParam("objectDistance", v); } });
+  var sSrcHeight = makeSlider({ id: "source-height", min: -40, max: 40, step: 1, unit: "mm", precision: 0, onChange: function (v) { setParam("sourceHeight", v); } });
+  var sObjHeight = makeSlider({ id: "object-height", min: 10, max: 40, step: 1, unit: "mm", precision: 0, onChange: function (v) { setParam("objectHeight", v); } });
+  var sRadius = makeSlider({ id: "radius", min: 25, max: 120, step: 1, unit: "mm", precision: 0, onChange: function (v) { setParam("radius", v); } });
+  var sAperture = makeSlider({ id: "aperture", min: 30, max: 200, step: 1, unit: "mm", precision: 0, onChange: function (v) { setParam("aperture", v); } });
+  var sLensIdx = makeSlider({ id: "lens-index", min: 1, max: 2, step: 0.01, unit: "", precision: 2, onChange: function (v) { setParam("lensIndex", v); } });
+  var sMedIdx = makeSlider({ id: "medium-index", min: 1, max: 1.8, step: 0.0001, unit: "", precision: 4, onChange: function (v) { setParam("mediumIndex", v); } });
+
+  var geomGrid = $("geomGrid");
+  geomGrid.appendChild(sObjDist.el);
+  geomGrid.appendChild(sSrcHeight.el);
+  geomGrid.appendChild(sObjHeight.el);
+
+  var sliderGrid = $("sliderGrid");
+  [sRadius, sAperture, sLensIdx, sMedIdx].forEach(function (s) { sliderGrid.appendChild(s.el); });
+
+  // Aperture note
+  var apNote = document.createElement("p");
+  apNote.className = "control-note";
+  apNote.textContent = "Limited to 2R so the spherical lens surface remains geometrically possible.";
+  sAperture.acc.appendChild(apNote);
+
+  // Medium presets
+  var presetArea = document.createElement("div");
+  presetArea.className = "medium-preset-area";
+  presetArea.innerHTML =
+    '<div class="medium-preset-heading"><span>Common media</span><span id="mediumName"></span></div>' +
+    '<div class="medium-presets" role="group" aria-label="Common surrounding media"></div>' +
+    '<p class="medium-insight" id="mediumInsight"></p>';
+  sMedIdx.acc.appendChild(presetArea);
+  var presetBtns = {};
+  MEDIA.forEach(function (m) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "medium-preset";
+    b.innerHTML = "<span>" + m.name + "</span><small>n = " + m.index.toFixed(4) + "</small>";
+    b.addEventListener("click", function () { setParam("mediumIndex", m.index); });
+    presetArea.querySelector(".medium-presets").appendChild(b);
+    presetBtns[m.id] = b;
+  });
+
+  // Source-mode buttons
+  var modeBtns = {};
+  MODES.forEach(function (m) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "source-mode-button";
+    b.innerHTML = '<svg class="source-glyph" viewBox="0 0 24 20" aria-hidden="true"><g>' + MODE_GLYPHS[m.id] + '</g></svg><span>' + m.label + '</span>';
+    b.addEventListener("click", function () { setParam("sourceMode", m.id); });
+    $("sourceModeOptions").appendChild(b);
+    modeBtns[m.id] = b;
+  });
+
+  // Lens-shape buttons
+  var lensBtns = {};
+  LENSES.forEach(function (l) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "lens-choice";
+    b.innerHTML = '<svg class="lens-icon" viewBox="0 0 24 34" aria-hidden="true"><path d="' + LENS_ICON_PATHS[l.id] +
+                  '" fill="currentColor" fill-opacity=".15" stroke="currentColor" stroke-width="1.7"/></svg><span>' + l.title + '</span>';
+    b.addEventListener("click", function () { setParam("kind", l.id); });
+    $("lensChoices").appendChild(b);
+    lensBtns[l.id] = b;
+  });
+
+  $("resetBtn").addEventListener("click", function () { state = Object.assign({}, DEFAULTS); render(); });
+
+  /* ================= Render ================= */
+  function setState(patch) { Object.assign(state, patch); render(); }
+
+  function render() {
+    var s = state, d = compute(s);
+    var N = d.hasSource;
+
+    // Source-mode buttons and description
+    MODES.forEach(function (m) { modeBtns[m.id].setAttribute("aria-pressed", String(s.sourceMode === m.id)); });
+    $("sourceDescription").textContent =
+      s.sourceMode === "parallel" ? "Use a distant source: the incoming light rays are parallel." :
+      s.sourceMode === "point" ? "Drag the blue point or adjust its distance and height to see its spherical wavefronts change." :
+      "Move an object in front of the lens and compare its real or virtual image.";
+
+    // Diagram
+    renderDiagram(s, d);
+
+    // Readout 1: focal length
+    $("ro-focal").textContent = d.focal === null ? "\u2014" : fmtSigned(d.focal);
+    $("ro-focal-unit").textContent = d.focal === null ? "no finite focus" : "mm";
+    $("ro-focal-note").textContent = d.noPower ? "Lens and medium indices match" : (d.focal > 0 ? "Measured from the lens centre" : "Negative = virtual focus");
+
+    // Readout 2: behaviour
+    $("ro-behaviour").textContent = d.noPower ? "No power" : (d.focal > 0 ? "Converging" : "Diverging");
+    $("ro-lens-title").textContent = d.lens.title + " lens";
+
+    // Readout 3: image distance or relative index
+    if (N) {
+      $("ro3-label").textContent = "Image distance";
+      $("ro3-value").textContent = (d.noPower || d.atInfinity) ? "\u2014" : fmtSigned(d.imageDist, 1);
+      $("ro3-unit").textContent = d.noPower ? "no image" : (d.atInfinity ? "at infinity" : "mm");
+      $("ro3-note").textContent = d.noPower ? "Lens has no optical power"
+        : d.atInfinity ? "Object at the focal plane"
+        : d.imageDist > 0 ? "Real image on the far side" : "Virtual image on the object side";
+    } else {
+      $("ro3-label").textContent = "Relative index";
+      $("ro3-value").textContent = d.rel.toFixed(4);
+      $("ro3-unit").innerHTML = "n<sub>rel</sub>";
+      $("ro3-note").innerHTML = "n<sub>lens</sub> &divide; n<sub>surrounding</sub>";
+    }
+
+    // Source geometry panel
+    var geomEl = $("sourceGeometry");
+    geomEl.hidden = !N;
+    if (N) {
+      $("geomTitle").textContent = s.sourceMode === "point" ? "Point-source position" : "Object position";
+      sObjDist.update({ label: s.sourceMode === "point" ? "Source distance" : "Object distance", value: s.objectDistance, min: 40, max: 300, leftLabel: "40", rightLabel: "300" });
+      if (s.sourceMode === "point") {
+        sSrcHeight.el.hidden = false; sObjHeight.el.hidden = true;
+        sSrcHeight.update({ label: "Point-source height", value: s.sourceHeight, leftLabel: MINUS + "40", rightLabel: "+40" });
+      } else {
+        sSrcHeight.el.hidden = true; sObjHeight.el.hidden = false;
+        sObjHeight.update({ label: "Object height", value: s.objectHeight, leftLabel: "10", rightLabel: "40" });
+      }
+    }
+
+    // Lens-shape buttons
+    LENSES.forEach(function (l) { lensBtns[l.id].setAttribute("aria-pressed", String(s.kind === l.id)); });
+
+    // Main sliders
+    var apMax = Math.min(200, s.radius * 2);
+    sRadius.update({ label: "Radius of curvature", value: s.radius, leftLabel: "25", rightLabel: "120" });
+    sAperture.update({ label: "Aperture diameter", value: s.aperture, min: 30, max: apMax, leftLabel: "30", rightLabel: String(apMax) });
+    sLensIdx.update({ label: "Lens refractive index", value: s.lensIndex, leftLabel: "1.00", rightLabel: "2.00" });
+    sMedIdx.update({ label: "Surrounding-medium index", value: s.mediumIndex, leftLabel: "1.0000", rightLabel: "1.8000" });
+
+    // Medium presets + insight
+    MEDIA.forEach(function (m) { presetBtns[m.id].setAttribute("aria-pressed", String(!!d.preset && d.preset.id === m.id)); });
+    $("mediumName").textContent = d.preset ? d.preset.name : "Custom medium";
+    $("mediumInsight").textContent =
+      d.preset && d.preset.id === "water" ? "Water changes the relative index much more than air does, so expect a larger focal shift." :
+      d.preset && d.preset.id === "air" ? "Air is very close to vacuum optically, so their focal lengths are nearly identical." :
+      d.preset && d.preset.id === "vacuum" ? "Vacuum is the n = 1.0000 reference for comparing surrounding media." :
+      "Drag the slider to explore a custom surrounding-medium index.";
+
+    // Insight panel
+    $("insightKicker").textContent = N ? "Image formation" : "A useful distinction";
+    $("insightTitle").innerHTML = N ? "Position sets the image." : "More aperture.<br>Same focal length.";
+    $("insightText").textContent = N
+      ? "The thin-lens equation predicts where an image forms. Positive image distance means a real image beyond the lens; negative means a virtual image on the object side."
+      : "A wider opening admits rays farther from the axis. In this ideal thin-lens model, aperture changes which rays enter \u2014 not the lens\u2019s focusing power.";
+    $("equation").setAttribute("aria-label", N ? "Thin-lens equation and magnification" : "Lensmaker relationship");
+    $("equation").innerHTML = N
+      ? "1 / f = 1 / d<sub>o</sub> + 1 / d<sub>i</sub><br><em>m = " + MINUS + "d<sub>i</sub> / d<sub>o</sub></em>"
+      : "1 / f = <em>(n<sub>rel</sub> " + MINUS + " 1)</em><br>\u00D7 (1 / R<sub>1</sub> " + MINUS + " 1 / R<sub>2</sub>)";
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
